@@ -72,8 +72,15 @@ export async function getLeadDetails(leadgenId: string, preloadedFormId?: string
   const url = `https://graph.facebook.com/v22.0/${leadgenId}?fields=${fields}&access_token=${accessToken}`;
 
   try {
-    const response = await fetch(url);
+    let response = await fetch(url);
     
+    // Se falhar (ex: leads de teste da ferramenta Lead Ads Testing não possuem ad_id/campaign_id e geram erro 33)
+    if (!response.ok) {
+      console.warn(`[META] Consulta enriquecida falhou para lead ${leadgenId} (${response.status}). Tentando fallback básico...`);
+      const fallbackUrl = `https://graph.facebook.com/v22.0/${leadgenId}?access_token=${accessToken}`;
+      response = await fetch(fallbackUrl);
+    }
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Erro ao buscar lead do Meta (${response.status}):`, errorText);
@@ -94,6 +101,50 @@ export async function getLeadDetails(leadgenId: string, preloadedFormId?: string
   } catch (error) {
     console.error("Erro na requisição para o Meta:", error);
     return null;
+  }
+}
+
+export async function getRecentMetaLeads(limitPerForm: number = 5): Promise<MetaLeadData[]> {
+  const accessToken = process.env.META_ACCESS_TOKEN;
+  const pageId = process.env.META_PAGE_ID || "923277277786867";
+  if (!accessToken) return [];
+
+  try {
+    const forms = await getPageLeadForms();
+    const leads: MetaLeadData[] = [];
+
+    // Busca leads dos formulários mais recentes/ativos da página
+    const activeForms = forms.slice(0, 15);
+    await Promise.all(
+      activeForms.map(async (form) => {
+        try {
+          const url = `https://graph.facebook.com/v22.0/${form.id}/leads?limit=${limitPerForm}&access_token=${accessToken}`;
+          const res = await fetch(url);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.data && Array.isArray(data.data)) {
+              for (const l of data.data) {
+                leads.push({
+                  id: l.id,
+                  created_time: l.created_time,
+                  field_data: l.field_data || [],
+                  form_id: form.id,
+                  form_name: form.name,
+                  platform: 'fb'
+                });
+              }
+            }
+          }
+        } catch (e) {
+          // Erro silencioso por formulário individual
+        }
+      })
+    );
+
+    return leads.sort((a, b) => new Date(b.created_time).getTime() - new Date(a.created_time).getTime());
+  } catch (err) {
+    console.error("Erro ao buscar leads recentes do Meta:", err);
+    return [];
   }
 }
 

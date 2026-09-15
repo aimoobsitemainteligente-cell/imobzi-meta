@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getLeadDetails } from "@/lib/meta";
 import { sendLeadToImobzi } from "@/lib/imobzi";
+import { saveLeadToDb } from "@/lib/db";
 
 // GET - Validação do webhook pela Meta
 export async function GET(req: NextRequest) {
@@ -50,6 +51,15 @@ export async function POST(req: NextRequest) {
                   if (leadData) {
                     // 2. Enviar os dados para a Imobzi
                     await sendLeadToImobzi(leadData);
+                  } else {
+                    // 3. Fallback: Registrar no banco Neon que o webhook foi disparado
+                    await saveLeadToDb({
+                      lead_id: leadgenId,
+                      form_id: formId,
+                      name: `Lead Meta (${leadgenId})`,
+                      status: 'success',
+                      source: 'Webhook Meta Lead Ads',
+                    });
                   }
                 }
               }

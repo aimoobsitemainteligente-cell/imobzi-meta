@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getLeadsFromDb } from "@/lib/db";
+import { getRecentMetaLeads } from "@/lib/meta";
 import fs from "fs";
 import path from "path";
 
@@ -34,7 +35,48 @@ export async function GET() {
     console.error("Erro ao buscar leads do Neon PostgreSQL:", err);
   }
 
-  // 2. Buscar contatos e leads recentes diretamente do Imobzi CRM
+  // 2. Buscar leads reais e de teste diretamente da Graph API do Meta (Facebook Leads)
+  let metaDirectLeads: any[] = [];
+  try {
+    const rawMetaLeads = await getRecentMetaLeads(5);
+    metaDirectLeads = rawMetaLeads.map((m) => {
+      const getField = (patterns: string[]) => {
+        if (!m.field_data) return "";
+        for (const p of patterns) {
+          const found = m.field_data.find((f) => f.name.toLowerCase().includes(p));
+          if (found && found.values && found.values.length > 0) return found.values[0];
+        }
+        return "";
+      };
+
+      const name = getField(["nome", "name"]) || "Lead Facebook";
+      const phone = getField(["telefone", "phone", "celular", "whatsapp"]);
+      const email = getField(["email"]);
+      const propertyCode = getField(["imóvel", "imovel", "código", "codigo"]);
+
+      return {
+        id: m.id,
+        timestamp: m.created_time || new Date().toISOString(),
+        name: name,
+        phone: phone,
+        email: email,
+        propertyCode: propertyCode,
+        imobziCode: "",
+        imobziDbId: "",
+        status: "success" as const,
+        source: m.form_name ? `Facebook Leads - ${m.form_name}` : "Facebook Leads",
+        formId: m.form_id,
+        formName: m.form_name,
+        campaignName: m.campaign_name,
+        adName: m.ad_name,
+        formattedNote: null,
+      };
+    });
+  } catch (err) {
+    console.error("Erro ao sincronizar leads diretos do Meta:", err);
+  }
+
+  // 3. Buscar contatos e leads recentes diretamente do Imobzi CRM
   let imobziLeads: any[] = [];
   const imobziSecret = process.env.IMOBZI_API_SECRET;
   if (imobziSecret) {
@@ -83,7 +125,7 @@ export async function GET() {
     }
   }
 
-  // 3. Fallback para arquivo local (se existir)
+  // 4. Fallback para arquivo local (se existir)
   let localLeads: any[] = [];
   try {
     if (fs.existsSync(historyFilePath)) {
@@ -94,15 +136,19 @@ export async function GET() {
     // Silently ignore
   }
 
-  // 4. Mesclar todos os registros com prioridade: Neon > Imobzi > Local
-  const combined = [...neonLeads, ...imobziLeads, ...localLeads];
+  // 5. Mesclar todos os registros com prioridade: Neon > Meta Graph API > Imobzi > Local
+  const combined = [...neonLeads, ...metaDirectLeads, ...imobziLeads, ...localLeads];
+  
+  // Ordenar por data mais recente primeiro
+  combined.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
   const seen = new Set<string>();
   const uniqueLeads = combined.filter((lead) => {
-    const key = lead.imobziCode || lead.imobziDbId || lead.id || lead.phone;
+    const key = lead.id || lead.imobziCode || lead.imobziDbId || (lead.phone ? lead.phone.replace(/\D/g, '') : null);
     if (!key || seen.has(key)) return false;
     seen.add(key);
     return true;
   });
 
-  return NextResponse.json({ leads: uniqueLeads });
+  return NextResponse.json({ leads: uniqueLeads.slice(0, 100) });
 }
