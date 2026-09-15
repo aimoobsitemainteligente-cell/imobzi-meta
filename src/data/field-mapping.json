@@ -1,0 +1,132 @@
+{
+  "contactFields": {
+    "fullname": "nome_completo",
+    "phone": "phone_number",
+    "email": "email",
+    "propertyCode": "Código do Imóvel"
+  },
+  "customQuestions": [
+    {
+      "id": "1",
+      "metaKey": "Código do Imóvel",
+      "label": "Código do Imóvel",
+      "target": "property_code",
+      "includeInNote": true,
+      "includeInProfile": true
+    },
+    {
+      "id": "2",
+      "metaKey": "qual_seria_a_sua_disponibilidade_para_aquisição?",
+      "label": "Disponibilidade para Aquisição",
+      "target": "profile",
+      "includeInNote": true,
+      "includeInProfile": true
+    },
+    {
+      "id": "3",
+      "metaKey": "possuí_valor_de_entrada_disponível?",
+      "label": "Possui Valor de Entrada",
+      "target": "profile",
+      "includeInNote": true,
+      "includeInProfile": true
+    },
+    {
+      "id": "4",
+      "metaKey": "qual_a_sua_disponibilidade_para_a_entrada?",
+      "label": "Valor/Disponibilidade de Entrada",
+      "target": "profile",
+      "includeInNote": true,
+      "includeInProfile": true
+    },
+    {
+      "id": "5",
+      "metaKey": "qual_faixa_de__investimento_você_procura?",
+      "label": "Faixa de Investimento",
+      "target": "profile",
+      "includeInNote": true,
+      "includeInProfile": true
+    },
+    {
+      "id": "6",
+      "metaKey": "como_pretende_fazer_a_aquisição?",
+      "label": "Forma de Aquisição (Financiamento / À vista)",
+      "target": "profile",
+      "includeInNote": true,
+      "includeInProfile": true
+    },
+    {
+      "id": "7",
+      "metaKey": "como_gostaria_de_prosseguir?",
+      "label": "Preferencia de Atendimento",
+      "target": "message",
+      "includeInNote": true,
+      "includeInProfile": false
+    },
+    {
+      "id": "8",
+      "metaKey": "qual_o_melhor_horário_para_te_ligar?",
+      "label": "Melhor Horário para Contato",
+      "target": "message",
+      "includeInNote": true,
+      "includeInProfile": false
+    },
+    {
+      "id": "auto_1789440864268_oph4",
+      "metaKey": "qual_a_sua_renda_mensal_comprovada?",
+      "label": "Qual a sua renda mensal comprovada",
+      "target": "profile",
+      "includeInNote": true,
+      "includeInProfile": true
+    },
+    {
+      "id": "auto_1789440864269_fnnw",
+      "metaKey": "tem_interesse_em_aceitar_veículo_na_troca?",
+      "label": "Tem interesse em aceitar veículo na troca",
+      "target": "message",
+      "includeInNote": true,
+      "includeInProfile": false
+    },
+    {
+      "id": "auto_1789440864270_15ol",
+      "metaKey": "deseja_visitar_o_imóvel_neste_final_de_semana?",
+      "label": "Deseja visitar o imóvel neste final de semana",
+      "target": "profile",
+      "includeInNote": true,
+      "includeInProfile": true
+    },
+    {
+      "id": "auto_1789442306059_6ut7",
+      "metaKey": "você_mora_em_rio_das_ostras?",
+      "label": "Você mora em rio das ostras",
+      "target": "message",
+      "includeInNote": true,
+      "includeInProfile": false
+    },
+    {
+      "id": "auto_1789442306059_p6dt",
+      "metaKey": "qual_a_sua_disponibilidade_para_a_aquisição?",
+      "label": "Qual a sua disponibilidade para a aquisição",
+      "target": "profile",
+      "includeInNote": true,
+      "includeInProfile": true
+    },
+    {
+      "id": "auto_1789442306060_rkeu",
+      "metaKey": "qual_faixa_de_investimento_você_procura?",
+      "label": "Qual faixa de investimento você procura",
+      "target": "profile",
+      "includeInNote": true,
+      "includeInProfile": true
+    },
+    {
+      "id": "auto_1789442306060_f4v1",
+      "metaKey": "qual_a_sua_disponibilidade_para_entrada?",
+      "label": "Qual a sua disponibilidade para entrada",
+      "target": "profile",
+      "includeInNote": true,
+      "includeInProfile": true
+    }
+  ],
+  "noteTitleTemplate": "Contato de {nome} sobre o imóvel de cód. {codigo_imovel} via Anúncio Facebook",
+  "leadSource": "Facebook Leads - ASN Negócios Imobiliários"
+}
