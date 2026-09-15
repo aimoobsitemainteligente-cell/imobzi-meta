@@ -1,14 +1,42 @@
 import { NextResponse } from "next/server";
+import { getLeadsFromDb } from "@/lib/db";
 import fs from "fs";
 import path from "path";
 
 const historyFilePath = path.join(process.cwd(), "src", "data", "leads-history.json");
 
 export async function GET() {
-  const imobziSecret = process.env.IMOBZI_API_SECRET;
-  let imobziLeads: any[] = [];
+  let neonLeads: any[] = [];
 
-  // 1. Tentar buscar leads reais diretamente do Imobzi CRM
+  // 1. Buscar leads registrados no Neon PostgreSQL (Persistência em Nuvem)
+  try {
+    const rows = await getLeadsFromDb(50);
+    if (rows && rows.length > 0) {
+      neonLeads = rows.map((r) => ({
+        id: r.lead_id,
+        timestamp: r.created_at || new Date().toISOString(),
+        name: r.name,
+        phone: r.phone || "",
+        email: r.email || "",
+        propertyCode: r.property_code || "",
+        imobziCode: r.imobzi_code || "",
+        imobziDbId: r.imobzi_db_id || "",
+        status: r.status || "success",
+        source: r.source || "Meta Lead Ads",
+        formId: r.form_id,
+        formName: r.form_name,
+        campaignName: r.campaign_name,
+        adName: r.ad_name,
+        formattedNote: r.formatted_note,
+      }));
+    }
+  } catch (err) {
+    console.error("Erro ao buscar leads do Neon PostgreSQL:", err);
+  }
+
+  // 2. Buscar contatos e leads recentes diretamente do Imobzi CRM
+  let imobziLeads: any[] = [];
+  const imobziSecret = process.env.IMOBZI_API_SECRET;
   if (imobziSecret) {
     try {
       const res = await fetch(
@@ -55,7 +83,7 @@ export async function GET() {
     }
   }
 
-  // 2. Se houver histórico salvo localmente (em desenvolvimento), mesclar
+  // 3. Fallback para arquivo local (se existir)
   let localLeads: any[] = [];
   try {
     if (fs.existsSync(historyFilePath)) {
@@ -63,11 +91,11 @@ export async function GET() {
       localLeads = JSON.parse(data);
     }
   } catch (err) {
-    // Silently ignore se não existir
+    // Silently ignore
   }
 
-  // Mesclar leads locais e remotos priorizando os mais recentes
-  const combined = [...localLeads, ...imobziLeads];
+  // 4. Mesclar todos os registros com prioridade: Neon > Imobzi > Local
+  const combined = [...neonLeads, ...imobziLeads, ...localLeads];
   const seen = new Set<string>();
   const uniqueLeads = combined.filter((lead) => {
     const key = lead.imobziCode || lead.imobziDbId || lead.id || lead.phone;

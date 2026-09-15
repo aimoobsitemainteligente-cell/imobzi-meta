@@ -1,4 +1,5 @@
 import { MetaLeadData } from './meta';
+import { saveLeadToDb } from './db';
 import fs from 'fs';
 import path from 'path';
 
@@ -60,7 +61,7 @@ function getFieldValue(leadData: MetaLeadData, keyOrPattern: string): string {
   return '';
 }
 
-function recordLeadInHistory(leadRecord: {
+async function recordLeadInHistory(leadRecord: {
   id: string;
   timestamp: string;
   name: string;
@@ -77,7 +78,32 @@ function recordLeadInHistory(leadRecord: {
   adName?: string;
   platform?: string;
   formattedNote?: string;
+  rawPayload?: any;
 }) {
+  // 1. Salvar no Neon PostgreSQL (Persistência em Nuvem para Vercel)
+  try {
+    await saveLeadToDb({
+      lead_id: leadRecord.id,
+      name: leadRecord.name,
+      phone: leadRecord.phone,
+      email: leadRecord.email,
+      property_code: leadRecord.propertyCode,
+      imobzi_code: leadRecord.imobziCode,
+      imobzi_db_id: leadRecord.imobziDbId,
+      status: leadRecord.status,
+      source: leadRecord.source,
+      form_id: leadRecord.formId,
+      form_name: leadRecord.formName,
+      campaign_name: leadRecord.campaignName,
+      ad_name: leadRecord.adName,
+      formatted_note: leadRecord.formattedNote,
+      raw_payload: leadRecord.rawPayload,
+    });
+  } catch (neonErr) {
+    console.error('Erro ao registrar lead no Neon:', neonErr);
+  }
+
+  // 2. Fallback para arquivo local (Ambiente de desenvolvimento)
   const historyPath = path.join(process.cwd(), 'src', 'data', 'leads-history.json');
   try {
     let history: any[] = [];
@@ -89,7 +115,7 @@ function recordLeadInHistory(leadRecord: {
     if (history.length > 50) history = history.slice(0, 50);
     fs.writeFileSync(historyPath, JSON.stringify(history, null, 2), 'utf8');
   } catch (err) {
-    console.error('Erro ao salvar histórico do lead:', err);
+    // Ignorado em ambientes somente leitura como Vercel
   }
 }
 
@@ -370,7 +396,7 @@ export async function sendLeadToImobzi(leadData: MetaLeadData) {
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Erro ao enviar lead para Imobzi (${response.status}):`, errorText);
-      recordLeadInHistory({
+      await recordLeadInHistory({
         id: leadData.id,
         timestamp: new Date().toISOString(),
         name: fullName,
@@ -392,7 +418,7 @@ export async function sendLeadToImobzi(leadData: MetaLeadData) {
     const result = await response.json();
     console.log("✅ Lead enviado para o Imobzi com sucesso via /v1/integration/lead!", result);
 
-    recordLeadInHistory({
+    await recordLeadInHistory({
       id: leadData.id,
       timestamp: new Date().toISOString(),
       name: fullName,
