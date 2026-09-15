@@ -88,6 +88,26 @@ export default function Dashboard() {
   const [newMetaKey, setNewMetaKey] = useState("");
   const [newLabel, setNewLabel] = useState("");
 
+  // Informações para Callback URL do Webhook Meta
+  const [callbackUrl, setCallbackUrl] = useState("");
+  const [verifyToken, setVerifyToken] = useState("imobzimetatoken2026");
+  const [copiedUrl, setCopiedUrl] = useState(false);
+  const [copiedToken, setCopiedToken] = useState(false);
+
+  const handleCopy = (text: string, type: "url" | "token") => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    if (type === "url") {
+      setCopiedUrl(true);
+      showToast("📋 Callback URL copiada com sucesso!");
+      setTimeout(() => setCopiedUrl(false), 3000);
+    } else {
+      setCopiedToken(true);
+      showToast("📋 Verify Token copiado com sucesso!");
+      setTimeout(() => setCopiedToken(false), 3000);
+    }
+  };
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 4000);
@@ -107,10 +127,10 @@ export default function Dashboard() {
       }
       if (histRes && histRes.leads) {
         setLeads(histRes.leads);
-              }
+      }
       if (formsRes && formsRes.forms && Array.isArray(formsRes.forms)) {
         setMetaForms(formsRes.forms);
-                if (formsRes.forms.length > 0 && !selectedFormId) {
+        if (formsRes.forms.length > 0 && !selectedFormId) {
           setSelectedFormId(formsRes.forms[0].id);
         }
       }
@@ -123,6 +143,15 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      setCallbackUrl(`${window.location.origin}/api/webhook/meta`);
+    }
+    fetch("/api/webhook-info")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.verifyToken) setVerifyToken(d.verifyToken);
+      })
+      .catch(() => {});
     loadData();
   }, []);
 
@@ -293,6 +322,68 @@ export default function Dashboard() {
           >
             🚪 Sair
           </button>
+        </div>
+      </div>
+
+      {/* Card Destaque: Dados de Configuração do Webhook no Meta */}
+      <div className="rounded-2xl border border-cyan-500/30 bg-gradient-to-r from-slate-900 via-cyan-950/20 to-slate-900 p-4 md:p-5 shadow-xl backdrop-blur-md">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-cyan-500/20 text-cyan-400 text-xs font-bold">
+                🔗
+              </span>
+              <h3 className="text-sm font-bold text-white">
+                Configuração do Webhook no Meta Developers
+              </h3>
+              <span className="text-[10px] bg-cyan-950 text-cyan-300 border border-cyan-800 px-2 py-0.5 rounded-full font-medium">
+                Pronto para copiar e colar
+              </span>
+            </div>
+            <p className="text-xs text-slate-400">
+              Copie e cole estes dados no portal <strong>developers.facebook.com ➔ Seu App ➔ Webhooks ➔ Page (Leadgen)</strong>:
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-3.5 grid grid-cols-1 lg:grid-cols-12 gap-3">
+          {/* Callback URL */}
+          <div className="lg:col-span-8 bg-slate-950/90 border border-slate-800 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            <div className="min-w-0 flex-1">
+              <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">
+                URL de Retorno de Chamada (Callback URL)
+              </div>
+              <div className="text-xs font-mono text-cyan-300 truncate select-all">
+                {callbackUrl || "Carregando URL..."}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleCopy(callbackUrl, "url")}
+              className="px-3.5 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer shadow-md shadow-cyan-600/20 active:scale-95"
+            >
+              {copiedUrl ? "✓ Copiado!" : "📋 Copiar URL"}
+            </button>
+          </div>
+
+          {/* Verify Token */}
+          <div className="lg:col-span-4 bg-slate-950/90 border border-slate-800 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            <div className="min-w-0 flex-1">
+              <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">
+                Token de Verificação (Verify Token)
+              </div>
+              <div className="text-xs font-mono text-emerald-300 truncate select-all">
+                {verifyToken || "imobzimetatoken2026"}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleCopy(verifyToken || "imobzimetatoken2026", "token")}
+              className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer border border-slate-700 active:scale-95"
+            >
+              {copiedToken ? "✓ Copiado!" : "📋 Copiar Token"}
+            </button>
+          </div>
         </div>
       </div>
 
