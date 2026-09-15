@@ -248,7 +248,7 @@ export default function Dashboard() {
   const preview = generatePreviewNote();
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 max-w-7xl mx-auto space-y-6 antialiased selection:bg-cyan-500 selection:text-white">
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 bg-cyan-600 text-white font-medium px-5 py-3 rounded-xl shadow-2xl shadow-cyan-500/30 flex items-center gap-3 animate-bounce border border-cyan-400">
@@ -274,9 +274,24 @@ export default function Dashboard() {
         <div className="flex items-center gap-2">
           <button
             onClick={loadData}
-            className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-xl text-xs font-medium border border-slate-800 transition-colors flex items-center gap-1.5"
+            className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-xl text-xs font-medium border border-slate-800 transition-colors flex items-center gap-1.5 cursor-pointer"
           >
             🔄 Sincronizar Dados
+          </button>
+          <button
+            onClick={async () => {
+              try {
+                await fetch("/api/auth/logout", { method: "POST" });
+                window.location.href = "/login";
+              } catch (err) {
+                console.error("Erro ao sair:", err);
+                window.location.href = "/login";
+              }
+            }}
+            className="px-3.5 py-1.5 bg-red-950/40 hover:bg-red-900/60 text-red-300 rounded-xl text-xs font-medium border border-red-900/50 transition-colors flex items-center gap-1.5 cursor-pointer"
+            title="Sair do painel"
+          >
+            🚪 Sair
           </button>
         </div>
       </div>
