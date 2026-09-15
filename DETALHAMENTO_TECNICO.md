@@ -258,16 +258,16 @@ Para garantir que o gestor nunca fique sem visualização do que está ocorrendo
 
 ### Como testar um novo lead de anúncio:
 1. Acesse a ferramenta oficial da Meta: [Meta Lead Ads Testing Tool](https://developers.facebook.com/tools/lead-ads-testing).
-2. Selecione a Página: **ASN Negócios Imobiliários**.
-3. Selecione o Formulário desejado (ex: `Form teste adil (v1)` ou qualquer formulário da lista).
+2. Selecione a sua Página do Facebook conectada.
+3. Selecione o Formulário desejado (ou crie um formulário de teste).
 4. Se já existir um lead gerado anteriormente, clique em **Excluir lead** e depois em **Criar lead**.
-5. Clique em **Acompanhar status**: o status exibirá `Success` para o app `1017948817924837 - imobzi-leads`.
-6. Abra o Dashboard em [https://imobzi-meta.vercel.app](https://imobzi-meta.vercel.app), vá na aba **Histórico de Leads** e clique em **🔄 Atualizar Lista**. O lead estará visível no topo da lista.
+5. Clique em **Acompanhar status**: o status exibirá `Success` para o seu aplicativo conectado ao Webhook.
+6. Abra o Dashboard no seu domínio de produção, vá na aba **Histórico de Leads** e clique em **🔄 Atualizar Lista**. O lead estará visível no topo da lista.
 
 ### Como atualizar o Token de Acesso da Meta:
 Se o token da página for revogado ou expirar:
 1. Acesse o [Graph API Explorer](https://developers.facebook.com/tools/explorer/).
-2. Selecione a Página **ASN Negócios Imobiliários** e gere um **Page Access Token** com os escopos `leads_retrieval`, `pages_read_engagement`, `pages_manage_ads`.
+2. Selecione a sua Página e gere um **Page Access Token** com os escopos `leads_retrieval`, `pages_read_engagement`, `pages_manage_ads`.
 3. No painel da **Vercel** (`Settings > Environment Variables`), atualize a variável `META_ACCESS_TOKEN`.
 4. Reimplante (Redeploy) a aplicação para que a nova chave passe a valer imediatamente.
 

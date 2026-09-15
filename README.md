@@ -75,20 +75,20 @@ Crie ou configure as seguintes variáveis no arquivo `.env.local` (local) e no p
 
 ```env
 # Meta Graph API
-META_VERIFY_TOKEN=imobzimetatoken2026
-META_ACCESS_TOKEN=EAAOd0a2xIuUBSY6... (Token de Acesso da Página)
-META_PAGE_ID=923277277786867
+META_VERIFY_TOKEN=seu_token_de_verificacao_aqui
+META_ACCESS_TOKEN=seu_token_de_acesso_da_pagina_aqui
+META_PAGE_ID=seu_id_da_pagina_meta
 
 # Imobzi CRM
-IMOBZI_API_SECRET=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpX... (Segredo JWT da API Imobzi)
+IMOBZI_API_SECRET=seu_segredo_jwt_imobzi_aqui
 
 # Proteção do Dashboard
-DASHBOARD_USERNAME=admin
-DASHBOARD_PASSWORD=asn2026
-SESSION_SECRET=asn_meta_imobzi_secret_session_key_983742918472918237
+DASHBOARD_USERNAME=seu_usuario_admin
+DASHBOARD_PASSWORD=sua_senha_segura
+SESSION_SECRET=sua_chave_secreta_aleatoria_com_mais_de_32_caracteres
 
 # Neon Database PostgreSQL
-DATABASE_URL=postgresql://neondb_owner:SENHA@ep-winter-bird-ac9dzn8f-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require
+DATABASE_URL=postgresql://usuario:senha@seu-pooler.neon.tech/neondb?sslmode=require
 ```
 
 ---
@@ -113,8 +113,7 @@ DATABASE_URL=postgresql://neondb_owner:SENHA@ep-winter-bird-ac9dzn8f-pooler.sa-e
    Acesse [http://localhost:3000](http://localhost:3000) no seu navegador.
 
 4. **Credenciais de acesso:**
-   - **Usuário:** `admin`
-   - **Senha:** `asn2026`
+   - Configure o usuário e senha desejados nas variáveis `DASHBOARD_USERNAME` e `DASHBOARD_PASSWORD` do seu `.env.local`.
 
 ---
 
@@ -122,19 +121,19 @@ DATABASE_URL=postgresql://neondb_owner:SENHA@ep-winter-bird-ac9dzn8f-pooler.sa-e
 
 Para conectar novos anúncios e formulários à aplicação:
 
-1. Acesse o [Meta for Developers](https://developers.facebook.com/apps/) e selecione o aplicativo **imobzi-leads** (ID `1017948817924837`).
+1. Acesse o [Meta for Developers](https://developers.facebook.com/apps/) e selecione o seu aplicativo do tipo Empresa.
 2. No menu lateral, navegue até **Webhooks > Page**.
 3. Configure a inscrição no campo **leadgen**:
    - **URL de Retorno de Chamada (Callback URL):**
      ```text
-     https://imobzi-meta.vercel.app/api/webhook/meta
+     https://seu-dominio.vercel.app/api/webhook/meta
      ```
    - **Token de Verificação (Verify Token):**
      ```text
-     imobzimetatoken2026
+     o_mesmo_token_configurado_em_META_VERIFY_TOKEN
      ```
 4. Clique em **Verificar e Salvar**.
-5. Certifique-se de que a Página **ASN Negócios Imobiliários** esteja inscrita no aplicativo.
+5. Certifique-se de que a Página esteja inscrita no aplicativo.
 6. Teste através da ferramenta oficial: [Meta Lead Ads Testing Tool](https://developers.facebook.com/tools/lead-ads-testing).
 
 ---
