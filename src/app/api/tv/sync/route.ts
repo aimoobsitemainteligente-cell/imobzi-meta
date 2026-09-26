@@ -56,51 +56,93 @@ export async function GET() {
         if (res.ok) {
           const data = await res.json();
           if (data && Array.isArray(data.contacts)) {
-            imobziLeads = data.contacts
-              .filter((c: any) => {
-                // Filtrar contatos que vieram do Meta/Facebook para evitar duplicação com a planilha
-                const source = c.media_source || '';
-                if (source.toLowerCase().includes('facebook') || source.toLowerCase().includes('meta')) {
-                  return false;
-                }
-                
-                // Filtrar por telefone se já existir na planilha
-                const phone = c.phones && c.phones.length > 0 
-                  ? (c.phones[0].number || c.phones[0].number_plain || '').replace(/\D/g, '')
-                  : '';
-                
-                if (phone && metaPhones.has(phone)) {
-                  return false;
-                }
+            const filteredContacts = data.contacts.filter((c: any) => {
+              // Filtrar contatos que vieram do Meta/Facebook para evitar duplicação com a planilha
+              const source = c.media_source || '';
+              if (source.toLowerCase().includes('facebook') || source.toLowerCase().includes('meta')) {
+                return false;
+              }
+              
+              // Filtrar por telefone se já existir na planilha
+              const phone = c.phones && c.phones.length > 0 
+                ? (c.phones[0].number || c.phones[0].number_plain || '').replace(/\D/g, '')
+                : '';
+              
+              if (phone && metaPhones.has(phone)) {
+                return false;
+              }
 
-                return true;
-              })
-              .map((c: any) => {
-                const phone = c.phones && c.phones.length > 0
-                  ? c.phones[0].number || c.phones[0].number_plain || ""
-                  : "";
-                
-                // Formatar a data de criação do Imobzi para o formato de SP esperado pela TV
-                const createdAtStr = c.created_at || new Date().toISOString();
-                const { data: dateSP, hora: timeSP } = formatToSP(createdAtStr);
+              return true;
+            });
 
-                return {
-                  lead_id: "imobzi_" + (c.contact_id || c.code),
-                  created_at: createdAtStr,
-                  nome: c.fullname || c.name || "Lead Imobzi",
-                  telefone: phone,
-                  ad_name: '',
-                  imovel: '',
-                  primeiro_contato_data: dateSP, // Assumimos que foi contatado na criação
-                  primeiro_contato_hora: timeSP,
-                  estagio: 'Novo', // Como é orgânico, deixamos "Novo" ou puxamos funil se houvesse via API
-                  corretor_nome: 'Equipe', // Idealmente pegaria o assignee do Imobzi
-                  status: 'novo',
-                  tempo_resposta: '0',
-                  link_imobzi: `https://my.imobzi.com/#/contact/${c.contact_id}`,
-                  origem: c.media_source || 'Imobzi CRM',
-                };
-              });
+            // Fetch Deals para esses contatos em paralelo
+            imobziLeads = await Promise.all(filteredContacts.map(async (c: any) => {
+              const phone = c.phones && c.phones.length > 0
+                ? c.phones[0].number || c.phones[0].number_plain || ""
+                : "";
+              
+              const createdAtStr = c.created_at || new Date().toISOString();
+              const { data: dateSP, hora: timeSP } = formatToSP(createdAtStr);
+
+              let dealStatus = 'Novo'; // Estágio real
+              let funnelStatus = 'novo'; // Status do Funil da TV
+              let dealAssignedTo = 'Equipe';
+
+              try {
+                const dRes = await fetch(`https://api.imobzi.app/v1/deals?contact_id=${c.contact_id}`, {
+                  headers: { "X-Imobzi-Secret": imobziSecret },
+                  cache: "no-store",
+                });
+                
+                if (dRes.ok) {
+                  const dData = await dRes.json();
+                  for (const key in dData) {
+                    if (typeof dData[key] === 'object' && dData[key].deals && dData[key].deals.length > 0) {
+                      const deal = dData[key].deals[0]; // pega o mais recente/primeiro da lista
+                      dealStatus = deal.stage_name || 'Negócio';
+                      if (deal.user && deal.user.name) {
+                        dealAssignedTo = deal.user.name;
+                      }
+
+                      if (deal.status === 'win') {
+                        funnelStatus = 'ganho';
+                      } else {
+                        const s = dealStatus.toLowerCase();
+                        if (s.includes('proposta') || s.includes('assinatura') || s.includes('contrato')) {
+                          funnelStatus = 'proposta';
+                        } else if (s.includes('visita')) {
+                          funnelStatus = 'visita agendada';
+                        } else if (s.includes('interesse')) {
+                          funnelStatus = 'em negociação';
+                        } else {
+                          funnelStatus = 'atendido'; // Se tem deal, é pelo menos "atendido"
+                        }
+                      }
+                      break; // Achou um deal, não precisa olhar os outros estagios
+                    }
+                  }
+                }
+              } catch (e) {
+                console.error("Erro ao buscar deals do contato", c.contact_id, e);
+              }
+
+              return {
+                lead_id: "imobzi_" + (c.contact_id || c.code),
+                created_at: createdAtStr,
+                nome: c.fullname || c.name || "Lead Imobzi",
+                telefone: phone,
+                ad_name: '',
+                imovel: '',
+                primeiro_contato_data: dateSP,
+                primeiro_contato_hora: timeSP,
+                estagio: dealStatus, 
+                corretor_nome: dealAssignedTo, 
+                status: funnelStatus, 
+                tempo_resposta: '0',
+                link_imobzi: `https://my.imobzi.com/#/contact/${c.contact_id}`,
+                origem: c.media_source || 'Imobzi CRM',
+              };
+            }));
           }
         }
       } catch (err) {
