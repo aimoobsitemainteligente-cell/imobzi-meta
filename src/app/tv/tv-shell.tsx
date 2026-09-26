@@ -126,20 +126,21 @@ export function TvShell() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // f ou F para fullscreen
       if (e.key === 'f' || e.key === 'F') {
         if (!document.fullscreenElement) {
           document.documentElement.requestFullscreen().catch(() => {});
         } else {
           document.exitFullscreen().catch(() => {});
         }
-      } else if (e.key === 'ArrowRight') {
+      } else if (e.key === 'ArrowRight' || e.key === 'Right' || e.keyCode === 39) {
         setPeriod(prev => {
           if (prev === 'hoje') return 'semana';
           if (prev === 'semana') return 'mes';
           if (prev === 'mes') return 'todo_periodo';
           return 'hoje';
         });
-      } else if (e.key === 'ArrowLeft') {
+      } else if (e.key === 'ArrowLeft' || e.key === 'Left' || e.keyCode === 37) {
         setPeriod(prev => {
           if (prev === 'hoje') return 'todo_periodo';
           if (prev === 'todo_periodo') return 'mes';
@@ -148,8 +149,8 @@ export function TvShell() {
         });
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   useEffect(() => {
