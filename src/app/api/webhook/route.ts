@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
                   if (leadData) {
                     // 2. Enviar os dados para a Imobzi
                     const imobziResult = await sendLeadToImobzi(leadData);
-                    const imobziId = imobziResult && typeof imobziResult !== 'boolean' ? imobziResult.db_id : null;
+                    const imobziId = imobziResult && typeof imobziResult !== 'boolean' ? imobziResult.code : null;
                     
                     // 2.1 Enviar os dados para o Google Sheets
                     const { sendToGoogleSheets } = await import("@/lib/google-sheets");
