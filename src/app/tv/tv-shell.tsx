@@ -74,6 +74,14 @@ export function TvShell() {
     }
   }, [period]);
 
+  const syncData = useCallback(async () => {
+    try {
+      await fetch(`/api/tv/sync`);
+    } catch (err) {
+      console.error('Erro no sync background da TV:', err);
+    }
+  }, []);
+
   const fetchEvents = useCallback(async () => {
     try {
       const res = await fetch('/api/tv/events');
@@ -90,13 +98,17 @@ export function TvShell() {
 
   useEffect(() => {
     fetchData();
+    syncData();
+    
     const intervalData = setInterval(fetchData, 5000);
+    const intervalSync = setInterval(syncData, 60000);
     const intervalEvents = setInterval(fetchEvents, 3000);
     return () => {
       clearInterval(intervalData);
+      clearInterval(intervalSync);
       clearInterval(intervalEvents);
     };
-  }, [fetchData, fetchEvents]);
+  }, [fetchData, syncData, fetchEvents]);
 
   // Refetch data when period changes immediately
   useEffect(() => {

@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
-import { getSheetsData } from '@/lib/tv/sheets';
+import { getTvLeadsFromDb } from '@/lib/db';
 import { calculateDashboardData } from '@/lib/tv/aggregates';
 
+export const revalidate = 0; // Dynamic route
 
 export async function GET(request: Request) {
   try {
@@ -9,12 +10,14 @@ export async function GET(request: Request) {
     const periodParam = searchParams.get('period') || 'hoje';
     const period = ['hoje', 'semana', 'mes', 'trimestre'].includes(periodParam) ? periodParam : 'hoje';
     
-    const leads = await getSheetsData();
+    // Ler do banco de dados Neon (ultra-rápido, evita timeout da Vercel)
+    const leads = await getTvLeadsFromDb();
+    
     let dashboardData = calculateDashboardData(leads, period as 'hoje' | 'semana' | 'mes' | 'trimestre');
     
     return NextResponse.json(dashboardData);
   } catch (error) {
-    console.error("Erro ao carregar dados do sheets:", error);
+    console.error("Erro ao carregar dados da TV do Neon:", error);
     return NextResponse.json({ error: "Failed to load data" }, { status: 500 });
   }
 }

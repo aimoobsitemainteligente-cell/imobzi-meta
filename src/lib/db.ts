@@ -59,8 +59,33 @@ export async function initDb() {
     `;
 
     await sql`
+      CREATE TABLE IF NOT EXISTS tv_leads (
+        id SERIAL PRIMARY KEY,
+        lead_id VARCHAR(100) UNIQUE,
+        nome VARCHAR(255),
+        telefone VARCHAR(100),
+        ad_name VARCHAR(255),
+        imovel VARCHAR(100),
+        primeiro_contato_data VARCHAR(20),
+        primeiro_contato_hora VARCHAR(20),
+        estagio VARCHAR(100),
+        corretor_nome VARCHAR(255),
+        status VARCHAR(100),
+        tempo_resposta VARCHAR(50),
+        link_imobzi VARCHAR(255),
+        origem VARCHAR(100),
+        created_at TIMESTAMP WITH TIME ZONE
+      );
+    `;
+
+    await sql`
       CREATE INDEX IF NOT EXISTS idx_meta_leads_created_at 
       ON meta_leads(created_at DESC);
+    `;
+
+    await sql`
+      CREATE INDEX IF NOT EXISTS idx_tv_leads_created_at 
+      ON tv_leads(created_at DESC);
     `;
 
     tableInitialized = true;
@@ -178,6 +203,72 @@ export async function getLeadsFromDb(limit: number = 50): Promise<DbLeadRecord[]
     }));
   } catch (err) {
     console.error("Erro ao carregar leads do Neon:", err);
+    return [];
+  }
+}
+
+export async function syncTvLeads(leads: any[]): Promise<boolean> {
+  const sql = getSql();
+  if (!sql) return false;
+
+  try {
+    await initDb();
+    
+    // Apenas inserir sequencialmente já que a função HTTP do Neon não suporta sql.begin()
+    for (const lead of leads) {
+      await sql`
+        INSERT INTO tv_leads (
+          lead_id, nome, telefone, ad_name, imovel, primeiro_contato_data,
+          primeiro_contato_hora, estagio, corretor_nome, status, tempo_resposta,
+          link_imobzi, origem, created_at
+        ) VALUES (
+          ${lead.lead_id}, ${lead.nome}, ${lead.telefone}, ${lead.ad_name}, ${lead.imovel},
+          ${lead.primeiro_contato_data}, ${lead.primeiro_contato_hora}, ${lead.estagio},
+          ${lead.corretor_nome}, ${lead.status}, ${lead.tempo_resposta}, ${lead.link_imobzi},
+          ${lead.origem}, ${lead.created_at}
+        )
+        ON CONFLICT (lead_id) DO UPDATE SET
+          nome = EXCLUDED.nome,
+          telefone = EXCLUDED.telefone,
+          ad_name = EXCLUDED.ad_name,
+          imovel = EXCLUDED.imovel,
+          primeiro_contato_data = EXCLUDED.primeiro_contato_data,
+          primeiro_contato_hora = EXCLUDED.primeiro_contato_hora,
+          estagio = EXCLUDED.estagio,
+          corretor_nome = EXCLUDED.corretor_nome,
+          status = EXCLUDED.status,
+          tempo_resposta = EXCLUDED.tempo_resposta,
+          link_imobzi = EXCLUDED.link_imobzi,
+          origem = EXCLUDED.origem,
+          created_at = EXCLUDED.created_at;
+      `;
+    }
+
+    return true;
+  } catch (err) {
+    console.error("Erro ao sincronizar tv_leads no Neon:", err);
+    return false;
+  }
+}
+
+export async function getTvLeadsFromDb(): Promise<any[]> {
+  const sql = getSql();
+  if (!sql) return [];
+
+  try {
+    await initDb();
+    const rows = await sql`
+      SELECT * FROM tv_leads
+      ORDER BY created_at DESC
+      LIMIT 1000;
+    `;
+    
+    return rows.map((r: any) => ({
+      ...r,
+      created_at: r.created_at ? new Date(r.created_at).toISOString() : new Date().toISOString(),
+    }));
+  } catch (err) {
+    console.error("Erro ao carregar tv_leads do Neon:", err);
     return [];
   }
 }
