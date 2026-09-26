@@ -11,6 +11,8 @@ export async function middleware(request: NextRequest) {
     pathname === "/api/webhook" ||
     pathname === "/login" ||
     pathname === "/api/auth/login" ||
+    pathname.startsWith("/api/tv") ||
+    pathname.startsWith("/tv") ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/public") ||
     pathname === "/favicon.ico" ||
