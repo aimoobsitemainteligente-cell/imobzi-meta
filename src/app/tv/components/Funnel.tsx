@@ -20,12 +20,14 @@ export function Funnel({ stats, view }: FunnelProps) {
     <div className="h-full bg-[#121820] border border-slate-800 rounded-xl p-6 flex flex-col justify-between">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-semibold text-slate-300 tracking-wide uppercase">
-          FUNIL DO PERÍODO
+          FUNIL DO PERÍODO {stats.outrosPercent === 0 && <span className="text-teal-500 ml-2">- LEAD META BUSINESS</span>}
         </h2>
-        <div className="flex bg-slate-900 rounded-full border border-slate-700 p-0.5">
-          <button className={`text-xs font-bold px-4 py-1.5 rounded-full transition-colors ${view === 'GERAL' ? 'bg-teal-500/10 text-teal-400 border border-teal-500/30' : 'text-slate-500'}`}>GERAL</button>
-          <button className={`text-xs font-bold px-4 py-1.5 rounded-full transition-colors ${view === 'META' ? 'bg-teal-500/10 text-teal-400 border border-teal-500/30' : 'text-slate-500'}`}>LEAD META BUSINESS</button>
-        </div>
+        {stats.outrosPercent > 0 && (
+          <div className="flex bg-slate-900 rounded-full border border-slate-700 p-0.5">
+            <button className={`text-xs font-bold px-4 py-1.5 rounded-full transition-colors ${view === 'GERAL' ? 'bg-teal-500/10 text-teal-400 border border-teal-500/30' : 'text-slate-500'}`}>GERAL</button>
+            <button className={`text-xs font-bold px-4 py-1.5 rounded-full transition-colors ${view === 'META' ? 'bg-teal-500/10 text-teal-400 border border-teal-500/30' : 'text-slate-500'}`}>LEAD META BUSINESS</button>
+          </div>
+        )}
       </div>
 
       {/* Chevrons Funnel */}
