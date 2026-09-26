@@ -31,27 +31,51 @@ export async function sendToGoogleSheets(leadData: any) {
 
     const sheets = google.sheets({ version: "v4", auth });
 
-    // 4. Preparar os dados para inserir (Apenas um array com os valores na ordem das colunas)
-    // Ex: Data, Nome, Email, Telefone, Campanha, Formulário, Código Imóvel
+    // Extrair os dados do array field_data do Meta (já que name e phone não vêm soltos)
+    let leadName = "N/A";
+    let leadPhone = "N/A";
+
+    if (leadData.field_data && Array.isArray(leadData.field_data)) {
+      for (const field of leadData.field_data) {
+        const fieldName = field.name.toLowerCase();
+        if (fieldName.includes('name') || fieldName.includes('nome')) {
+          leadName = field.values[0] || leadName;
+        }
+        if (fieldName.includes('phone') || fieldName.includes('telefone') || fieldName.includes('celular')) {
+          leadPhone = field.values[0] || leadPhone;
+        }
+      }
+    }
+
+    // 4. Preparar os dados de acordo com a planilha:
+    // A=Data, B=Hora, C=Lead(nome), D=Nº TELEFONE, E=QUAL VIDEO?, F=IMÓVEL
+    const now = new Date();
+    // Forçar formatação manual para evitar problemas de fuso/locale na Vercel
+    const dataString = `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth()+1).toString().padStart(2, '0')}/${now.getFullYear()}`;
+    const horaString = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    
+    // Para "QUAL VIDEO?" podemos usar o nome do anúncio ou da campanha
+    const qualVideo = leadData.ad_name || leadData.campaign_name || "N/A";
+    
+    // Para "IMÓVEL" podemos usar o código do imóvel ou o nome do formulário
+    const imovel = leadData.property_code || leadData.form_name || "N/A";
+
     const values = [
       [
-        new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }),
-        leadData.name || "N/A",
-        leadData.email || "N/A",
-        leadData.phone || "N/A",
-        leadData.campaign_name || "N/A",
-        leadData.form_name || "N/A",
-        leadData.property_code || "N/A",
-        leadData.source || "Meta Lead Ads"
+        dataString,        // A = Data
+        horaString,        // B = Hora da entrada
+        leadName,          // C = Lead (nome)
+        leadPhone,         // D = Nº TELEFONE
+        qualVideo,         // E = QUAL VIDEO?
+        imovel             // F = IMÓVEL
       ],
     ];
 
     // 5. Inserir a linha na planilha
-    // Estamos assumindo que a aba se chama "Página1". Se for diferente, mude aqui.
     // O range "A:F" indica as colunas de A até F
     const response = await sheets.spreadsheets.values.append({
       spreadsheetId: spreadsheetId,
-      range: "Página1!A:F", // Mude "Página1" para o nome correto da aba se necessário
+      range: "Página1!A:F",
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values,
