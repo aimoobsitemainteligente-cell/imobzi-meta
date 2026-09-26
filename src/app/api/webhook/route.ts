@@ -50,11 +50,12 @@ export async function POST(req: NextRequest) {
                   
                   if (leadData) {
                     // 2. Enviar os dados para a Imobzi
-                    await sendLeadToImobzi(leadData);
+                    const imobziResult = await sendLeadToImobzi(leadData);
+                    const imobziId = imobziResult && typeof imobziResult !== 'boolean' ? imobziResult.db_id : null;
                     
                     // 2.1 Enviar os dados para o Google Sheets
                     const { sendToGoogleSheets } = await import("@/lib/google-sheets");
-                    await sendToGoogleSheets(leadData);
+                    await sendToGoogleSheets(leadData, imobziId);
                   } else {
                     // 3. Fallback: Registrar no banco Neon que o webhook foi disparado
                     await saveLeadToDb({

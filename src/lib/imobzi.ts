@@ -437,7 +437,7 @@ export async function sendLeadToImobzi(leadData: MetaLeadData) {
       formattedNote: formattedMessage,
     });
 
-    return true;
+    return { success: true, db_id: result.db_id, code: result.code };
   } catch (error) {
     console.error("Erro na requisição para o Imobzi:", error);
     return false;

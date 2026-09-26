@@ -3,8 +3,9 @@ import { google } from "googleapis";
 /**
  * Função para enviar os dados do lead para uma planilha do Google Sheets.
  * @param leadData Dados mapeados do lead retornados pela Meta.
+ * @param imobziId (Opcional) ID do contato no Imobzi para gerar o link.
  */
-export async function sendToGoogleSheets(leadData: any) {
+export async function sendToGoogleSheets(leadData: any, imobziId?: string | null) {
   try {
     // 1. Validar se as credenciais foram configuradas
     const credentialsBase64 = process.env.GOOGLE_CREDENTIALS_BASE64;
@@ -71,22 +72,25 @@ export async function sendToGoogleSheets(leadData: any) {
     }
     imovel += `Formulário: ${nomeFormulario}\n🎯 Campanha: ${nomeCampanha}`;
 
-    const values = [
-      [
-        dataString,        // A = Data
-        horaString,        // B = Hora da entrada
-        leadName,          // C = Lead (nome)
-        leadPhone,         // D = Nº TELEFONE
-        qualVideo,         // E = QUAL VIDEO? (Anúncio)
-        imovel             // F = IMÓVEL (Form + Campanha)
-      ],
-    ];
+    // Link do Imobzi na coluna W (23ª coluna = índice 22)
+    const linkImobzi = imobziId ? `https://app.imobzi.com/contact/${imobziId}` : "N/A";
+
+    const row = new Array(23).fill(""); // Cria um array com 23 posições vazias
+    row[0] = dataString;        // A = Data
+    row[1] = horaString;        // B = Hora da entrada
+    row[2] = leadName;          // C = Lead (nome)
+    row[3] = leadPhone;         // D = Nº TELEFONE
+    row[4] = qualVideo;         // E = QUAL VIDEO?
+    row[5] = imovel;            // F = IMÓVEL
+    row[22] = linkImobzi;       // W = Link Imobzi
+
+    const values = [row];
 
     // 5. Inserir a linha na planilha
-    // O range "A:F" indica as colunas de A até F
+    // O range "A:W" indica as colunas de A até W
     const response = await sheets.spreadsheets.values.append({
       spreadsheetId: spreadsheetId,
-      range: "Página1!A:F",
+      range: "Página1!A:W",
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values,
