@@ -1,10 +1,14 @@
 export const AUTH_COOKIE_NAME = "asn_dashboard_session";
 
 function getSecretKey(): string {
-  return (
-    process.env.SESSION_SECRET ||
-    "asn_imobzi_meta_super_secret_key_2026_default_fallback"
-  );
+  if (!process.env.SESSION_SECRET) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('SESSION_SECRET is required in production.');
+    }
+    console.warn('WARNING: SESSION_SECRET is not set, using default for development.');
+    return "asn_imobzi_meta_super_secret_key_2026_default_fallback";
+  }
+  return process.env.SESSION_SECRET;
 }
 
 // Converte string para Uint8Array
@@ -85,6 +89,12 @@ export async function verifySessionToken(
 }
 
 export function validateCredentials(user: string, pass: string): boolean {
+  if (!process.env.DASHBOARD_USERNAME || !process.env.DASHBOARD_PASSWORD) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('DASHBOARD_USERNAME and DASHBOARD_PASSWORD are required in production.');
+    }
+  }
+
   const validUser = process.env.DASHBOARD_USERNAME || "admin";
   const validPass = process.env.DASHBOARD_PASSWORD || "asn2026";
 

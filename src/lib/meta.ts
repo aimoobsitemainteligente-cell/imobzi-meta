@@ -52,6 +52,10 @@ export async function getLeadDetails(leadgenId: string, preloadedFormId?: string
   }
 
   if (leadgenId === '444444444444') {
+    if (process.env.NODE_ENV === 'production') {
+      console.warn('[META] Rejeitando lead de teste em produção.');
+      return null;
+    }
     console.log('[TESTE META] Lead de teste simulado pelo painel da Meta detectado! Gerando dados mock para teste de integração.');
     return {
       id: leadgenId,

@@ -85,7 +85,15 @@ export async function sendToGoogleSheets(leadData: any, imobziId?: string | null
     row[5] = imovel;            // F = IMÓVEL
     row[22] = linkImobzi;       // W = Link Imobzi
 
-    const values = [row];
+    // Sanitize to prevent formula injection (=, +, -, @)
+    const sanitizedRow = row.map(val => {
+      if (typeof val === 'string' && /^[=+\-@]/.test(val)) {
+        return `'${val}`;
+      }
+      return val;
+    });
+
+    const values = [sanitizedRow];
 
     // 5. Inserir a linha na planilha
     // O range "A:W" indica as colunas de A até W

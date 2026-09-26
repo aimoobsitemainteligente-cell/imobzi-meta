@@ -22,10 +22,27 @@ export async function GET(req: NextRequest) {
   }
 }
 
+import crypto from 'crypto';
+
 // POST - Recebe os eventos de novos Leads
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const rawBody = await req.text();
+    const signature = req.headers.get('x-hub-signature-256');
+    const appSecret = process.env.META_APP_SECRET;
+
+    if (appSecret && signature) {
+      const hmac = crypto.createHmac('sha256', appSecret);
+      const digest = `sha256=${hmac.update(rawBody).digest('hex')}`;
+      if (signature !== digest) {
+        console.error('Assinatura do webhook inválida!');
+        return new NextResponse('Invalid signature', { status: 401 });
+      }
+    } else if (process.env.NODE_ENV === 'production') {
+      console.warn('Webhook recebido sem validação de assinatura em produção (META_APP_SECRET não configurado).');
+    }
+
+    const body = JSON.parse(rawBody);
 
     // Validar se é um evento do "page" (Facebook Page)
     if (body.object === 'page') {

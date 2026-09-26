@@ -72,7 +72,7 @@ export function TvShell() {
       setData(mockDashboardData);
       setLastUpdate(new Date());
     }
-  }, []);
+  }, [period]);
 
   const fetchEvents = useCallback(async () => {
     try {
