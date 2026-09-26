@@ -1,7 +1,13 @@
 import { TvDashboardData } from './types';
 
 export function calculateDashboardData(leads: any[]): TvDashboardData {
-  const hoje = new Date().toLocaleDateString('pt-BR');
+  const formatter = new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+  const hoje = formatter.format(new Date());
   
   // Count leads from today and month
   let leadsHojeMeta = 0;
@@ -62,7 +68,7 @@ export function calculateDashboardData(leads: any[]): TvDashboardData {
     };
   });
 
-  const mesAtual = new Date().toLocaleDateString('pt-BR', { month: '2-digit', year: 'numeric' }); // MM/YYYY
+  const mesAtual = hoje.substring(3); // MM/YYYY
 
   for (const lead of leads) {
     const dataParts = lead.created_at.split(' ')[0].split('/'); // DD/MM/YYYY
