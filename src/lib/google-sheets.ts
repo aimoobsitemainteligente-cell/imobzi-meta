@@ -73,7 +73,8 @@ export async function sendToGoogleSheets(leadData: any, imobziId?: string | null
     imovel += `Formulário: ${nomeFormulario}\n🎯 Campanha: ${nomeCampanha}`;
 
     // Link do Imobzi na coluna W (23ª coluna = índice 22)
-    const linkImobzi = imobziId ? `https://app.imobzi.com/contact/${imobziId}` : "N/A";
+    const safeId = imobziId ? imobziId.replace("person-", "") : "";
+    const linkImobzi = safeId ? `https://my.imobzi.com/#/contacts/person-${safeId}` : "N/A";
 
     const row = new Array(23).fill(""); // Cria um array com 23 posições vazias
     row[0] = dataString;        // A = Data
