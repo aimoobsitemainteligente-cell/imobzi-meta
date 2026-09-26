@@ -3,6 +3,7 @@ import { TvDashboardData, SheetEvent } from './types';
 export const mockDashboardData: TvDashboardData = {
   kpis: {
     leads_hoje: { total: 45, meta: 35, outros: 10 },
+    leads_mes: { total: 150, meta: 130, outros: 20 },
     sem_dono: 2,
     sla_5min: { percent: 85, atendidos: 38, total_atendidos_periodo: 45 },
     visitas: { total: 12, meta: 20 },
