@@ -10,7 +10,7 @@ export function KpiRow({ kpis, period, theme }: KpiRowProps) {
   return (
     <div className="h-[18vh] px-8 py-4 grid grid-cols-5 gap-6">
       <KpiCard
-        title={`LEADS ${period.toUpperCase()}`}
+        title={`LEADS ${period === 'todo_periodo' ? 'TODO PERÍODO' : period.toUpperCase()}`}
         value={kpis.leads.total}
         sub={`${kpis.leads.meta} Lead Meta Business · ${kpis.leads.outros} outros`}
         valueColor="text-[var(--accent)]"

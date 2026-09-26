@@ -100,6 +100,7 @@ export function calculateDashboardData(leads: any[], period: Period = 'hoje'): T
     if (period === 'hoje') return dateMs >= startOfToday;
     if (period === 'semana') return dateMs >= startOfWeek;
     if (period === 'mes') return dateMs >= startOfMonth;
+    if (period === 'todo_periodo') return true;
     return true;
   };
 
@@ -186,6 +187,9 @@ export function calculateDashboardData(leads: any[], period: Period = 'hoje'): T
   } else if (period === 'semana') {
     metaVisitas = Math.ceil(metaVisitasMes / 4);
     metaFecharam = Math.ceil(metaFecharamMes / 4);
+  } else if (period === 'todo_periodo') {
+    metaVisitas = metaVisitasMes * 3; // Approx 3 months of data usually
+    metaFecharam = metaFecharamMes * 3;
   }
 
   // Calculate Median
