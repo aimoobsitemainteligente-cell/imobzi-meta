@@ -216,32 +216,36 @@ export async function syncTvLeads(leads: any[]): Promise<boolean> {
     
     // Apenas inserir sequencialmente já que a função HTTP do Neon não suporta sql.begin()
     for (const lead of leads) {
-      await sql`
-        INSERT INTO tv_leads (
-          lead_id, nome, telefone, ad_name, imovel, primeiro_contato_data,
-          primeiro_contato_hora, estagio, corretor_nome, status, tempo_resposta,
-          link_imobzi, origem, created_at
-        ) VALUES (
-          ${lead.lead_id}, ${lead.nome}, ${lead.telefone}, ${lead.ad_name}, ${lead.imovel},
-          ${lead.primeiro_contato_data}, ${lead.primeiro_contato_hora}, ${lead.estagio},
-          ${lead.corretor_nome}, ${lead.status}, ${lead.tempo_resposta}, ${lead.link_imobzi},
-          ${lead.origem}, ${lead.created_at}
-        )
-        ON CONFLICT (lead_id) DO UPDATE SET
-          nome = EXCLUDED.nome,
-          telefone = EXCLUDED.telefone,
-          ad_name = EXCLUDED.ad_name,
-          imovel = EXCLUDED.imovel,
-          primeiro_contato_data = EXCLUDED.primeiro_contato_data,
-          primeiro_contato_hora = EXCLUDED.primeiro_contato_hora,
-          estagio = EXCLUDED.estagio,
-          corretor_nome = EXCLUDED.corretor_nome,
-          status = EXCLUDED.status,
-          tempo_resposta = EXCLUDED.tempo_resposta,
-          link_imobzi = EXCLUDED.link_imobzi,
-          origem = EXCLUDED.origem,
-          created_at = EXCLUDED.created_at;
-      `;
+      try {
+        await sql`
+          INSERT INTO tv_leads (
+            lead_id, nome, telefone, ad_name, imovel, primeiro_contato_data,
+            primeiro_contato_hora, estagio, corretor_nome, status, tempo_resposta,
+            link_imobzi, origem, created_at
+          ) VALUES (
+            ${lead.lead_id}, ${lead.nome}, ${lead.telefone}, ${lead.ad_name}, ${lead.imovel},
+            ${lead.primeiro_contato_data}, ${lead.primeiro_contato_hora}, ${lead.estagio},
+            ${lead.corretor_nome}, ${lead.status}, ${lead.tempo_resposta}, ${lead.link_imobzi},
+            ${lead.origem}, ${lead.created_at}
+          )
+          ON CONFLICT (lead_id) DO UPDATE SET
+            nome = EXCLUDED.nome,
+            telefone = EXCLUDED.telefone,
+            ad_name = EXCLUDED.ad_name,
+            imovel = EXCLUDED.imovel,
+            primeiro_contato_data = EXCLUDED.primeiro_contato_data,
+            primeiro_contato_hora = EXCLUDED.primeiro_contato_hora,
+            estagio = EXCLUDED.estagio,
+            corretor_nome = EXCLUDED.corretor_nome,
+            status = EXCLUDED.status,
+            tempo_resposta = EXCLUDED.tempo_resposta,
+            link_imobzi = EXCLUDED.link_imobzi,
+            origem = EXCLUDED.origem,
+            created_at = EXCLUDED.created_at;
+        `;
+      } catch (e) {
+        console.error("Erro inserindo lead", lead.lead_id, e);
+      }
     }
 
     return true;
