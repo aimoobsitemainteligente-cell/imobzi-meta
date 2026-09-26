@@ -22,7 +22,7 @@ export function Funnel({ stats, view, period, theme }: FunnelProps) {
     <div className="h-full bg-[#121820] border border-slate-800 rounded-xl p-6 flex flex-col justify-between">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-semibold text-slate-300 tracking-wide uppercase flex items-center gap-2">
-          FUNIL DO PERÍODO · {period === 'todo_periodo' ? 'TODO PERÍODO' : period}
+          FUNIL DO PERÍODO · {period.toUpperCase()}
         </h2>
         {stats.outrosPercent > 0 && (
           <div className="flex bg-slate-900 rounded-full border border-slate-700 p-0.5">

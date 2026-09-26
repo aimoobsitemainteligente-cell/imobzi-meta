@@ -7,10 +7,10 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const periodParam = searchParams.get('period') || 'hoje';
-    const period = ['hoje', 'semana', 'mes', 'todo_periodo'].includes(periodParam) ? periodParam : 'hoje';
+    const period = ['hoje', 'semana', 'mes', 'trimestre'].includes(periodParam) ? periodParam : 'hoje';
     
     const leads = await getSheetsData();
-    let dashboardData = calculateDashboardData(leads, period as 'hoje' | 'semana' | 'mes' | 'todo_periodo');
+    let dashboardData = calculateDashboardData(leads, period as 'hoje' | 'semana' | 'mes' | 'trimestre');
     
     return NextResponse.json(dashboardData);
   } catch (error) {

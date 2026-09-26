@@ -37,9 +37,9 @@ const PERIOD_THEME = {
     glow: "#F5B94222",
     pillText: "#1A1303",
   },
-  todo_periodo: {
-    id: "todo_periodo",
-    label: "Todo Período",
+  trimestre: {
+    id: "trimestre",
+    label: "Trimestre",
     accent: "#9D72FF",      // roxo
     accentDim: "#9D72FF33",
     glow: "#9D72FF22",
@@ -137,13 +137,13 @@ export function TvShell() {
         setPeriod(prev => {
           if (prev === 'hoje') return 'semana';
           if (prev === 'semana') return 'mes';
-          if (prev === 'mes') return 'todo_periodo';
+          if (prev === 'mes') return 'trimestre';
           return 'hoje';
         });
       } else if (e.key === 'ArrowLeft' || e.key === 'Left' || e.keyCode === 37) {
         setPeriod(prev => {
-          if (prev === 'hoje') return 'todo_periodo';
-          if (prev === 'todo_periodo') return 'mes';
+          if (prev === 'hoje') return 'trimestre';
+          if (prev === 'trimestre') return 'mes';
           if (prev === 'mes') return 'semana';
           return 'hoje';
         });

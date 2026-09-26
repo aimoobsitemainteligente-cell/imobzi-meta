@@ -21,9 +21,9 @@ export function TopBar({ periodo, setPeriodo, lastUpdate, currentTime }: TopBarP
       </div>
 
       <div className="flex bg-[#121820] rounded-full border border-slate-700 p-0.5 cursor-pointer">
-        {(['hoje', 'semana', 'mes', 'todo_periodo'] as Period[]).map((p) => {
+        {(['hoje', 'semana', 'mes', 'trimestre'] as Period[]).map((p) => {
           const isActive = periodo === p;
-          const label = p === 'todo_periodo' ? 'TODO PERÍODO' : p.toUpperCase();
+          const label = p.toUpperCase();
           return (
             <div
               key={p}
