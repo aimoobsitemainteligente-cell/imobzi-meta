@@ -1,22 +1,32 @@
-import { TvDashboardData } from './types';
+import { TvDashboardData, Period } from './types';
 
-export function calculateDashboardData(leads: any[]): TvDashboardData {
+export function calculateDashboardData(leads: any[], period: Period = 'hoje'): TvDashboardData {
   const formatter = new Intl.DateTimeFormat('pt-BR', {
     timeZone: 'America/Sao_Paulo',
     day: '2-digit',
     month: '2-digit',
     year: 'numeric'
   });
-  const hoje = formatter.format(new Date());
   
-  // Count leads from today and month
-  let leadsHojeMeta = 0;
-  let leadsHojeOutros = 0;
-  let leadsMesMeta = 0;
-  let leadsMesOutros = 0;
+  const now = new Date();
+  // Get start of today
+  const todayString = formatter.format(now);
+  const [d, m, y] = todayString.split('/');
+  const startOfToday = new Date(parseInt(y), parseInt(m) - 1, parseInt(d)).getTime();
+
+  // Get start of month
+  const startOfMonth = new Date(parseInt(y), parseInt(m) - 1, 1).getTime();
+
+  // Get start of week (Monday)
+  const dayOfWeek = now.getDay(); // 0 is Sunday, 1 is Monday
+  const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  const startOfWeek = new Date(parseInt(y), parseInt(m) - 1, parseInt(d) + diffToMonday).getTime();
+
+  let leadsMeta = 0;
+  let leadsOutros = 0;
   let semDono = 0;
   
-  let entraram = leads.length;
+  let entraram = 0;
   let atendidos = 0;
   let qualificados = 0;
   let visitas = 0;
@@ -52,45 +62,62 @@ export function calculateDashboardData(leads: any[]): TvDashboardData {
   let sla5MinCount = 0;
   let totalAtendidosComTempo = 0;
 
-  // Sort leads for ticker (newest first)
-  const ticker = [...leads].reverse().slice(0, 5).map(l => {
+  // Sort leads for ticker (newest first), dedup by lead_id, ignore empty/placeholders
+  const ticker: { lead_id: string, nome_mascarado: string, estagio: string, time_ago: string }[] = [];
+  const seenIds = new Set<string>();
+
+  for (const l of [...leads].reverse()) {
+    if (ticker.length >= 10) break; // keep up to 10
+    if (seenIds.has(l.lead_id)) continue;
+    
+    const nameStr = (l.nome || '').trim();
+    if (!nameStr || nameStr.toLowerCase() === 'nome_do_lead' || nameStr.includes('{')) continue;
+
+    seenIds.add(l.lead_id);
+    
     // mask name: "Wesley" -> "W***"
-    const nameParts = (l.nome || 'Sem Nome').split(' ');
+    const nameParts = nameStr.split(' ');
     const firstName = nameParts[0];
     const masked = firstName.length > 1 ? firstName[0] + '***' : '***';
     const finalName = nameParts.length > 1 ? `${masked} ${nameParts[nameParts.length - 1]}` : masked;
     
-    return {
+    ticker.push({
       lead_id: l.lead_id,
       nome_mascarado: finalName,
       estagio: l.status || 'Novo',
-      time_ago: l.created_at.split(' ')[1] || 'Recente' // just the time for now
-    };
-  });
+      time_ago: l.created_at.split(' ')[1] || 'Recente'
+    });
+  }
 
-  const mesAtual = hoje.substring(3); // MM/YYYY
+  const isDateInPeriod = (dateMs: number, period: Period) => {
+    if (period === 'hoje') return dateMs >= startOfToday;
+    if (period === 'semana') return dateMs >= startOfWeek;
+    if (period === 'mes') return dateMs >= startOfMonth;
+    return true;
+  };
 
   for (const lead of leads) {
-    const dataParts = lead.created_at.split(' ')[0].split('/'); // DD/MM/YYYY
-    const dataCriacao = lead.created_at.split(' ')[0];
-    const mesLead = dataParts.length === 3 ? `${dataParts[1]}/${dataParts[2]}` : '';
-    
-    if (dataCriacao === hoje) {
-      if (lead.origem === 'META') leadsHojeMeta++;
-      else leadsHojeOutros++;
-    }
-    
-    if (mesLead === mesAtual) {
-      if (lead.origem === 'META') leadsMesMeta++;
-      else leadsMesOutros++;
-    }
-    
     const corretor = (lead.corretor_nome || '').trim();
-    if (!corretor || corretor.toLowerCase() === 'sem dono') {
+    const isSemDono = !corretor || corretor.toLowerCase() === 'sem dono';
+    const status = normalize(lead.status);
+    
+    // SEM DONO é sempre a fila de agora, independente do período
+    if (isSemDono && status === 'novo') {
       semDono++;
     }
 
-    const status = normalize(lead.status);
+    const createdTime = parseDateTime(lead.created_at);
+    if (createdTime === 0) continue;
+    
+    // Filter by period for everything else
+    if (!isDateInPeriod(createdTime, period)) {
+      continue;
+    }
+    
+    entraram++;
+
+    if (lead.origem === 'META') leadsMeta++;
+    else leadsOutros++;
     const hasStatus = status !== '' && status !== 'novo';
     const hasCorretor = corretor !== '' && corretor.toLowerCase() !== 'sem dono';
     
@@ -122,14 +149,13 @@ export function calculateDashboardData(leads: any[]): TvDashboardData {
     }
 
     // SLA & Tempo Médio
-    const createdTime = parseDateTime(lead.created_at);
     let primeiroContatoStr = '';
     if (lead.primeiro_contato_data) {
       primeiroContatoStr = `${lead.primeiro_contato_data} ${lead.primeiro_contato_hora || '00:00'}`;
     }
     const contatoTime = parseDateTime(primeiroContatoStr);
     
-    if (createdTime > 0 && contatoTime > createdTime) {
+    if (contatoTime > createdTime) {
       const diffMinutes = (contatoTime - createdTime) / 1000 / 60;
       responseTimes.push(diffMinutes);
       totalAtendidosComTempo++;
@@ -137,6 +163,22 @@ export function calculateDashboardData(leads: any[]): TvDashboardData {
         sla5MinCount++;
       }
     }
+  }
+
+  // Calculate metas based on period
+  const metaVisitasMes = 50;
+  const metaFecharamMes = 10;
+  const diasDoMes = new Date(parseInt(startOfToday.toString().slice(0, 4)), parseInt(startOfToday.toString().slice(4, 6)), 0).getDate() || 30; // approx
+  
+  let metaVisitas = metaVisitasMes;
+  let metaFecharam = metaFecharamMes;
+  
+  if (period === 'hoje') {
+    metaVisitas = Math.ceil(metaVisitasMes / 30); // 30 is default
+    metaFecharam = Math.ceil(metaFecharamMes / 30);
+  } else if (period === 'semana') {
+    metaVisitas = Math.ceil(metaVisitasMes / 4);
+    metaFecharam = Math.ceil(metaFecharamMes / 4);
   }
 
   // Calculate Median
@@ -157,10 +199,24 @@ export function calculateDashboardData(leads: any[]): TvDashboardData {
     }
   }
 
-  // Race kart
-  const race = Array.from(brokerMap.values())
+  // Calculate Race Kart (this is ALWAYS month calendar)
+  // Re-run for brokerMap but only for current month
+  const raceBrokerMap = new Map<string, { visitas: number, name: string }>();
+  for (const lead of leads) {
+    const createdTime = parseDateTime(lead.created_at);
+    if (createdTime === 0 || createdTime < startOfMonth) continue;
+    const status = normalize(lead.status);
+    const corretor = (lead.corretor_nome || '').trim();
+    if (['visita agendada', 'proposta', 'ganho'].includes(status) && corretor && corretor.toLowerCase() !== 'sem dono') {
+      const b = raceBrokerMap.get(corretor) || { visitas: 0, name: corretor };
+      b.visitas++;
+      raceBrokerMap.set(corretor, b);
+    }
+  }
+
+  const race = Array.from(raceBrokerMap.values())
     .map(b => {
-      const meta = 10; // fixed meta for now
+      const meta = 10; // fixed monthly meta per broker for now
       return {
         corretor_id: b.name,
         nome: b.name,
@@ -175,17 +231,17 @@ export function calculateDashboardData(leads: any[]): TvDashboardData {
     .map((b, idx) => ({ ...b, position: idx + 1 }));
 
   return {
+    period,
     kpis: {
-      leads_hoje: { total: leadsHojeMeta + leadsHojeOutros, meta: leadsHojeMeta, outros: leadsHojeOutros },
-      leads_mes: { total: leadsMesMeta + leadsMesOutros, meta: leadsMesMeta, outros: leadsMesOutros },
+      leads: { total: leadsMeta + leadsOutros, meta: leadsMeta, outros: leadsOutros },
       sem_dono: semDono,
       sla_5min: { 
         percent: totalAtendidosComTempo > 0 ? Math.round((sla5MinCount / totalAtendidosComTempo) * 100) : 0, 
         atendidos: sla5MinCount, 
         total_atendidos_periodo: totalAtendidosComTempo 
       },
-      visitas: { total: visitas, meta: 50 },
-      fechamentos: { total: fecharam, meta: 10 }
+      visitas: { total: visitas, meta: metaVisitas },
+      fechamentos: { total: fecharam, meta: metaFecharam }
     },
     funnel: {
       entraram,
@@ -194,8 +250,8 @@ export function calculateDashboardData(leads: any[]): TvDashboardData {
       visitas,
       propostas,
       fecharam,
-      metaPercent: leads.length > 0 ? Math.round((leads.filter(l => l.origem === 'META').length / leads.length) * 100) : 0,
-      outrosPercent: leads.length > 0 ? Math.round((leads.filter(l => l.origem !== 'META').length / leads.length) * 100) : 0,
+      metaPercent: entraram > 0 ? Math.round((leadsMeta / entraram) * 100) : 0,
+      outrosPercent: entraram > 0 ? Math.round((leadsOutros / entraram) * 100) : 0,
       tempoMedioPrimeiroContato: Math.round(medianMinutes * 60) // in seconds for the frontend to format
     },
     race,

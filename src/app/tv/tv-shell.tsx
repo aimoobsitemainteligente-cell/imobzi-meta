@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { TvDashboardData, SheetEvent } from '@/lib/tv/types';
+import { TvDashboardData, SheetEvent, Period } from '@/lib/tv/types';
 import { mockDashboardData, mockEvents } from '@/lib/tv/mock';
 import { TopBar } from './components/TopBar';
 import { KpiRow } from './components/KpiRow';
@@ -12,18 +12,46 @@ import { ModalNewLead } from './components/ModalNewLead';
 import { ModalAttended } from './components/ModalAttended';
 import { AlertStrip } from './components/AlertStrip';
 
+const PERIOD_THEME = {
+  hoje: {
+    id: "hoje",
+    label: "Hoje",
+    accent: "#2EE6A6",      // teal
+    accentDim: "#2EE6A633",
+    glow: "#2EE6A622",
+    pillText: "#04251A",
+  },
+  semana: {
+    id: "semana",
+    label: "Semana",
+    accent: "#6EA8FF",      // azul
+    accentDim: "#6EA8FF33",
+    glow: "#6EA8FF22",
+    pillText: "#07101F",
+  },
+  mes: {
+    id: "mes",
+    label: "Mês",
+    accent: "#F5B942",      // âmbar
+    accentDim: "#F5B94233",
+    glow: "#F5B94222",
+    pillText: "#1A1303",
+  },
+};
+
 export function TvShell() {
   const [data, setData] = useState<TvDashboardData | null>(null);
   const [events, setEvents] = useState<SheetEvent[]>([]);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [funnelView, setFunnelView] = useState<'GERAL' | 'META'>('GERAL');
+  const [period, setPeriod] = useState<Period>('hoje');
   
   const [demoMode, setDemoMode] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch('/api/tv');
+      const res = await fetch(`/api/tv?period=${period}`);
       if (res.ok) {
         const json = await res.json();
         setData(json);
@@ -61,6 +89,11 @@ export function TvShell() {
       clearInterval(intervalEvents);
     };
   }, [fetchData, fetchEvents]);
+
+  // Refetch data when period changes immediately
+  useEffect(() => {
+    fetchData();
+  }, [period, fetchData]);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -122,17 +155,30 @@ export function TvShell() {
   const showDemoModal1 = demoMode === 'modal1';
   const showDemoModal2 = demoMode === 'modal2';
 
+  const theme = PERIOD_THEME[period];
+
   return (
-    <div className="h-screen w-screen bg-[#0B0F14] overflow-hidden font-sans text-slate-200 select-none">
+    <div 
+      id="tv-root"
+      className="h-screen w-screen bg-[#0B0F14] overflow-hidden font-sans text-slate-200 select-none transition-colors duration-200"
+      style={{
+        '--accent': theme.accent,
+        '--accent-dim': theme.accentDim,
+        '--glow': theme.glow,
+        '--pill-text': theme.pillText,
+      } as React.CSSProperties}
+    >
+      <div className="absolute top-0 left-0 right-0 h-[2px] bg-[var(--accent)] transition-colors duration-200" />
+      
       <AlertStrip count={data.fila} />
       
       <div className={`transition-transform duration-300 ${data.fila > 0 ? 'translate-y-[4vh]' : ''} h-full flex flex-col`}>
-        <TopBar periodo="HOJE" lastUpdate={lastUpdate} currentTime={currentTime} />
-        <KpiRow kpis={data.kpis} />
+        <TopBar periodo={period} setPeriodo={setPeriod} lastUpdate={lastUpdate} currentTime={currentTime} />
+        <KpiRow kpis={data.kpis} period={period} theme={theme} />
         
         <div className="h-[52vh] flex gap-6 px-8 py-2">
           <div className="w-[58%]">
-            <Funnel stats={data.funnel} view={funnelView} />
+            <Funnel stats={data.funnel} view={funnelView} period={period} theme={theme} />
           </div>
           <div className="w-[42%]">
             <RaceTrack karts={data.race} />
@@ -140,7 +186,7 @@ export function TvShell() {
         </div>
 
         <div className="mt-auto">
-          <FooterTicker campanhaLider={data.campanhaLider} ticker={data.ticker} plantao={data.plantao} />
+          <FooterTicker campanhaLider={data.campanhaLider} ticker={data.ticker} plantao={data.plantao} period={period} theme={theme} />
         </div>
       </div>
 

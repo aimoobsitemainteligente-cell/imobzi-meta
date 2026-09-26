@@ -1,13 +1,15 @@
-import { TvDashboardData } from '@/lib/tv/types';
+import { TvDashboardData, Period } from '@/lib/tv/types';
 import { UserCheck } from 'lucide-react';
 
 interface FooterTickerProps {
   campanhaLider: TvDashboardData['campanhaLider'];
   ticker: TvDashboardData['ticker'];
   plantao: TvDashboardData['plantao'];
+  period: Period;
+  theme: any;
 }
 
-export function FooterTicker({ campanhaLider, ticker, plantao }: FooterTickerProps) {
+export function FooterTicker({ campanhaLider, ticker, plantao, period, theme }: FooterTickerProps) {
   
   const getStageColor = (estagio: string) => {
     switch (estagio) {
@@ -23,10 +25,12 @@ export function FooterTicker({ campanhaLider, ticker, plantao }: FooterTickerPro
     <div className="h-[12vh] flex items-center px-8 border-t border-slate-800 bg-transparent">
       
       <div className="w-1/4 flex flex-col justify-center">
-        <div className="text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider">CAMPANHA LÍDER HOJE ·</div>
+        <div className="text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider transition-colors duration-200">
+          CAMPANHA LÍDER {period} ·
+        </div>
         <div className="text-sm font-semibold text-slate-300 flex items-center gap-2">
           {campanhaLider ? campanhaLider.nome : '—'}
-          {campanhaLider && <span className="text-teal-400">• {campanhaLider.count} leads</span>}
+          {campanhaLider && <span className="text-[var(--accent)] transition-colors duration-200">• {campanhaLider.count} leads</span>}
         </div>
       </div>
 
@@ -53,16 +57,22 @@ export function FooterTicker({ campanhaLider, ticker, plantao }: FooterTickerPro
         </div>
       </div>
 
-      <div className="w-1/4 flex justify-end items-center gap-4 text-sm font-semibold text-slate-400">
-        <UserCheck className="w-5 h-5" />
-        <div>
-          plantão: <span className="text-teal-400">{plantao.atual ? plantao.atual : '—'}</span>
+      {plantao.atual && plantao.atual !== '-' && (
+        <div className="w-1/4 flex justify-end items-center gap-4 text-sm font-semibold text-slate-400">
+          <UserCheck className="w-5 h-5 text-[var(--accent)] transition-colors duration-200" />
+          <div>
+            plantão: <span className="text-[var(--accent)] transition-colors duration-200">{plantao.atual}</span>
+          </div>
+          {plantao.proximo && plantao.proximo !== '-' && (
+            <>
+              <div className="opacity-50">•</div>
+              <div>
+                próximo: <span className="text-amber-500">{plantao.proximo}</span>
+              </div>
+            </>
+          )}
         </div>
-        <div className="opacity-50">•</div>
-        <div>
-          próximo: <span className="text-amber-500">{plantao.proximo ? plantao.proximo : '—'}</span>
-        </div>
-      </div>
+      )}
     </div>
   );
 }

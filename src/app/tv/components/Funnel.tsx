@@ -1,12 +1,14 @@
-import { FunnelStats } from '@/lib/tv/types';
+import { FunnelStats, Period } from '@/lib/tv/types';
 import { BarChart3, SignalHigh } from 'lucide-react';
 
 interface FunnelProps {
   stats: FunnelStats;
   view: 'GERAL' | 'META';
+  period: Period;
+  theme: any;
 }
 
-export function Funnel({ stats, view }: FunnelProps) {
+export function Funnel({ stats, view, period, theme }: FunnelProps) {
   const stages = [
     { name: 'ENTRARAM', count: stats.entraram },
     { name: 'ATENDIDOS', count: stats.atendidos },
@@ -19,8 +21,8 @@ export function Funnel({ stats, view }: FunnelProps) {
   return (
     <div className="h-full bg-[#121820] border border-slate-800 rounded-xl p-6 flex flex-col justify-between">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold text-slate-300 tracking-wide uppercase">
-          FUNIL DO PERÍODO {stats.outrosPercent === 0 && <span className="text-teal-500 ml-2">- LEAD META BUSINESS</span>}
+        <h2 className="text-lg font-semibold text-slate-300 tracking-wide uppercase flex items-center gap-2">
+          FUNIL DO PERÍODO · {period}
         </h2>
         {stats.outrosPercent > 0 && (
           <div className="flex bg-slate-900 rounded-full border border-slate-700 p-0.5">
@@ -51,28 +53,24 @@ export function Funnel({ stats, view }: FunnelProps) {
               }}
             >
               <div className="text-[10px] font-bold text-slate-400 mb-1 z-10">{stage.name}</div>
-              <div className={`text-4xl font-bold z-10 ${isFirst ? 'text-teal-400' : 'text-white'}`}>{stage.count}</div>
+              <div className={`text-4xl font-bold z-10 transition-colors duration-200 ${isFirst ? 'text-[var(--accent)]' : 'text-white'}`}>{stage.count}</div>
             </div>
           );
         })}
       </div>
       
       {/* Conversions row */}
-      <div className="flex justify-between items-center px-12 py-3 border border-slate-800 rounded-lg bg-slate-900/30 mt-4 text-sm font-semibold text-slate-400">
+      <div className="flex justify-between items-center px-6 py-3 border border-slate-800 rounded-lg bg-slate-900/30 mt-4 text-sm font-semibold text-slate-400">
         {stages.slice(0, -1).map((stage, i) => {
           const nextCount = stages[i+1].count;
           const conv = stage.count > 0 ? Math.round((nextCount / stage.count) * 100) : 0;
           return (
-            <div key={i} className="flex items-center gap-6">
+            <div key={i} className="flex-1 flex justify-center items-center gap-2">
               <span className="text-slate-300">{conv}%</span>
-              {i < stages.length - 2 && <span>&rarr;</span>}
+              <span className="opacity-50">&rarr;</span>
             </div>
           );
         })}
-        <span>&rarr;</span>
-        <span className="text-slate-300">
-          {stages[4].count > 0 ? Math.round((stages[5].count / stages[4].count) * 100) : 0}%
-        </span>
       </div>
 
       <div className="flex justify-between items-center mt-4 text-sm px-2">
@@ -94,7 +92,11 @@ export function Funnel({ stats, view }: FunnelProps) {
         </div>
         <div className="text-right border-l border-slate-700 pl-6">
           <div className="text-slate-400 text-xs">tempo mediano 1º contato</div>
-          <div className="font-bold text-teal-400 text-lg">{Math.floor(stats.tempoMedioPrimeiroContato / 60)}m{stats.tempoMedioPrimeiroContato % 60}s</div>
+          <div className="font-bold text-[var(--accent)] text-lg transition-colors duration-200">
+            {stats.tempoMedioPrimeiroContato >= 3600 
+              ? `${Math.floor(stats.tempoMedioPrimeiroContato / 3600)}h ${Math.floor((stats.tempoMedioPrimeiroContato % 3600) / 60)}min` 
+              : `${Math.floor(stats.tempoMedioPrimeiroContato / 60)}m ${stats.tempoMedioPrimeiroContato % 60}s`}
+          </div>
         </div>
       </div>
     </div>
