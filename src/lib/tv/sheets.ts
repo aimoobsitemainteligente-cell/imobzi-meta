@@ -45,7 +45,7 @@ export async function getSheetsData() {
       status: row[11] || '', // L
       tempo_resposta: row[21] || '', // V
       link_imobzi: row[22] || '', // W
-      origem: (row[4] || '').toLowerCase().includes('meta') ? 'META' : 'OUTROS',
+      origem: 'META', // Todos os leads da planilha vêm do Meta
     };
   });
 

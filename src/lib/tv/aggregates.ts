@@ -31,7 +31,7 @@ export function calculateDashboardData(leads: any[]): TvDashboardData {
     return {
       lead_id: l.lead_id,
       nome_mascarado: finalName,
-      estagio: l.estagio || 'Novo',
+      estagio: l.status || 'Novo',
       time_ago: l.created_at.split(' ')[1] || 'Recente' // just the time for now
     };
   });
@@ -49,10 +49,21 @@ export function calculateDashboardData(leads: any[]): TvDashboardData {
       semDono++;
     }
 
-    const estagio = normalize(lead.estagio);
-    if (estagio !== 'novo') atendidos++;
-    if (estagio === 'qualificado' || estagio === 'visita' || estagio === 'proposta' || estagio === 'ganho') qualificados++;
-    if (estagio === 'visita' || estagio === 'proposta' || estagio === 'ganho') {
+    const status = normalize(lead.status);
+    const hasStatus = status !== '' && status !== 'novo';
+    const hasCorretor = corretor !== '' && corretor.toLowerCase() !== 'sem dono';
+    
+    // Só NÃO entra como atendido se estiver "sem status (ou novo)" E "sem corretor"
+    if (hasStatus || hasCorretor) {
+      atendidos++;
+    }
+    
+    // Funnel rule (simplified based on image):
+    if (['em negociação', 'visita agendada', 'proposta', 'ganho'].includes(status)) {
+      qualificados++;
+    }
+
+    if (['visita agendada', 'proposta', 'ganho'].includes(status)) {
       visitas++;
       if (corretor && corretor.toLowerCase() !== 'sem dono') {
         const b = brokerMap.get(corretor) || { visitas: 0, name: corretor };
@@ -60,8 +71,8 @@ export function calculateDashboardData(leads: any[]): TvDashboardData {
         brokerMap.set(corretor, b);
       }
     }
-    if (estagio === 'proposta' || estagio === 'ganho') propostas++;
-    if (estagio === 'ganho') fecharam++;
+    if (['proposta', 'ganho'].includes(status)) propostas++;
+    if (status === 'ganho') fecharam++;
   }
 
   // Race kart
