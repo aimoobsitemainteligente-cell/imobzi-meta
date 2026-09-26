@@ -54,11 +54,8 @@ export async function sendToGoogleSheets(leadData: any) {
     const dataString = `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth()+1).toString().padStart(2, '0')}/${now.getFullYear()}`;
     const horaString = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
     
-    // Para "QUAL VIDEO?" podemos usar o nome do anúncio ou da campanha
-    const qualVideo = leadData.ad_name || leadData.campaign_name || "N/A";
-    
-    // Para "IMÓVEL" podemos usar o código do imóvel ou o nome do formulário
-    const imovel = leadData.property_code || leadData.form_name || "N/A";
+    // Para "QUAL VIDEO?" e "IMÓVEL", conforme solicitado, colocaremos o nome do Anúncio (ad_name)
+    const nomeAnuncio = leadData.ad_name || "N/A";
 
     const values = [
       [
@@ -66,8 +63,8 @@ export async function sendToGoogleSheets(leadData: any) {
         horaString,        // B = Hora da entrada
         leadName,          // C = Lead (nome)
         leadPhone,         // D = Nº TELEFONE
-        qualVideo,         // E = QUAL VIDEO?
-        imovel             // F = IMÓVEL
+        nomeAnuncio,       // E = QUAL VIDEO? (Anúncio)
+        nomeAnuncio        // F = IMÓVEL (Anúncio)
       ],
     ];
 
