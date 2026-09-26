@@ -78,7 +78,9 @@ export function parseFromSP(dataStr: string, horaStr?: string): number | null {
  * Retorna o timestamp (ms) do INÍCIO do período solicitado, 
  * considerando a meia-noite no fuso horário de São Paulo.
  */
-export function getStartOfPeriodSP(period: 'hoje' | 'semana' | 'mes' | 'trimestre'): number {
+export function getStartOfPeriodSP(period: 'hoje' | 'semana' | 'mes' | 'trimestre' | 'todo_periodo'): number {
+  if (period === 'todo_periodo') return 0;
+
   const now = new Date();
   
   // Pegamos a data atual em SP

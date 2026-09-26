@@ -68,6 +68,7 @@ export function calculateDashboardData(leads: any[], period: Period = 'hoje'): T
   }
 
   const isDateInPeriod = (dateMs: number, period: Period) => {
+    if (period === 'todo_periodo') return true;
     if (period === 'hoje') return dateMs >= startOfToday;
     if (period === 'semana') return dateMs >= startOfWeek;
     if (period === 'mes') return dateMs >= startOfMonth;
@@ -160,6 +161,9 @@ export function calculateDashboardData(leads: any[], period: Period = 'hoje'): T
   } else if (period === 'trimestre') {
     metaVisitas = metaVisitasMes * 3; // Approx 3 months of data usually
     metaFecharam = metaFecharamMes * 3;
+  } else if (period === 'todo_periodo') {
+    metaVisitas = metaVisitasMes * 12; // Approx 1 year for all time
+    metaFecharam = metaFecharamMes * 12;
   }
 
   // Calculate Median

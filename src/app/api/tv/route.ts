@@ -8,12 +8,12 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const periodParam = searchParams.get('period') || 'hoje';
-    const period = ['hoje', 'semana', 'mes', 'trimestre'].includes(periodParam) ? periodParam : 'hoje';
+    const period = ['hoje', 'semana', 'mes', 'trimestre', 'todo_periodo'].includes(periodParam) ? periodParam : 'hoje';
     
     // Ler do banco de dados Neon (ultra-rápido, evita timeout da Vercel)
     const leads = await getTvLeadsFromDb();
     
-    let dashboardData = calculateDashboardData(leads, period as 'hoje' | 'semana' | 'mes' | 'trimestre');
+    let dashboardData = calculateDashboardData(leads, period as 'hoje' | 'semana' | 'mes' | 'trimestre' | 'todo_periodo');
     
     return NextResponse.json(dashboardData);
   } catch (error) {

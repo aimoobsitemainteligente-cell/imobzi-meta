@@ -57,7 +57,7 @@ export interface Campanha {
 }
 
 // Derived Types for TV Dashboard
-export type Period = 'hoje' | 'semana' | 'mes' | 'trimestre';
+export type Period = 'hoje' | 'semana' | 'mes' | 'trimestre' | 'todo_periodo';
 
 export interface Kpis {
   leads: { total: number, meta: number, outros: number };
