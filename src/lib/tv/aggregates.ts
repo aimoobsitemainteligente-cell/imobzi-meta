@@ -1,26 +1,35 @@
 import { TvDashboardData, Period } from './types';
 
 export function calculateDashboardData(leads: any[], period: Period = 'hoje'): TvDashboardData {
-  const formatter = new Intl.DateTimeFormat('pt-BR', {
-    timeZone: 'America/Sao_Paulo',
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  });
-  
+  // Obtém a data atual no fuso de São Paulo (UTC-3)
   const now = new Date();
-  // Get start of today
-  const todayString = formatter.format(now);
-  const [d, m, y] = todayString.split('/');
-  const startOfToday = new Date(parseInt(y), parseInt(m) - 1, parseInt(d)).getTime();
+  const spOffset = -3 * 60 * 60 * 1000; // -3 hours in ms
+  const utcNow = now.getTime() + (now.getTimezoneOffset() * 60000); // UTC time
+  const spNow = new Date(utcNow + spOffset);
+  
+  const y = spNow.getFullYear();
+  const m = spNow.getMonth(); // 0-11
+  const d = spNow.getDate();
 
-  // Get start of month
-  const startOfMonth = new Date(parseInt(y), parseInt(m) - 1, 1).getTime();
+  // Create start of today, week, month in SP timezone, then convert back to UTC ms for comparison
+  const getMsInSp = (year: number, month: number, date: number) => {
+    // Create UTC date that matches SP midnight, then subtract SP offset to get actual UTC time
+    // Actually, simpler: create SP midnight as string, then parse it?
+    // SP midnight = year-month-dateT00:00:00.000-03:00
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const isoString = `${year}-${pad(month + 1)}-${pad(date)}T00:00:00.000-03:00`;
+    return new Date(isoString).getTime();
+  };
 
-  // Get start of week (Monday)
-  const dayOfWeek = now.getDay(); // 0 is Sunday, 1 is Monday
+  const startOfToday = getMsInSp(y, m, d);
+  const startOfMonth = getMsInSp(y, m, 1);
+
+  const dayOfWeek = spNow.getDay(); // 0 is Sunday
   const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-  const startOfWeek = new Date(parseInt(y), parseInt(m) - 1, parseInt(d) + diffToMonday).getTime();
+  
+  // Handling negative dates safely by using Date object arithmetic
+  const spStartOfWeek = new Date(y, m, d + diffToMonday);
+  const startOfWeek = getMsInSp(spStartOfWeek.getFullYear(), spStartOfWeek.getMonth(), spStartOfWeek.getDate());
 
   let leadsMeta = 0;
   let leadsOutros = 0;
@@ -39,7 +48,7 @@ export function calculateDashboardData(leads: any[], period: Period = 'hoje'): T
   // Helper para normalizar strings
   const normalize = (s: string) => (s || '').trim().toLowerCase();
 
-  // Helper para parsear DD/MM/YYYY HH:MM
+  // Helper para parsear DD/MM/YYYY HH:MM vindo do Google Sheets (Brasil)
   const parseDateTime = (dateTimeStr: string) => {
     if (!dateTimeStr) return 0;
     if (dateTimeStr.includes('T')) return new Date(dateTimeStr).getTime();
@@ -49,13 +58,11 @@ export function calculateDashboardData(leads: any[], period: Period = 'hoje'): T
     const dParts = datePart.split('/');
     if (dParts.length !== 3) return 0;
     const tParts = (timePart || '00:00').split(':');
-    return new Date(
-      parseInt(dParts[2]), 
-      parseInt(dParts[1]) - 1, 
-      parseInt(dParts[0]), 
-      parseInt(tParts[0] || '0'), 
-      parseInt(tParts[1] || '0')
-    ).getTime();
+    
+    // As dates from the sheet are in BRT (UTC-3), parse them as such
+    const pad = (n: string) => n.padStart(2, '0');
+    const isoString = `${dParts[2]}-${pad(dParts[1])}-${pad(dParts[0])}T${pad(tParts[0])}:${pad(tParts[1])}:00.000-03:00`;
+    return new Date(isoString).getTime();
   };
 
   const responseTimes: number[] = [];
@@ -168,7 +175,7 @@ export function calculateDashboardData(leads: any[], period: Period = 'hoje'): T
   // Calculate metas based on period
   const metaVisitasMes = 50;
   const metaFecharamMes = 10;
-  const diasDoMes = new Date(parseInt(startOfToday.toString().slice(0, 4)), parseInt(startOfToday.toString().slice(4, 6)), 0).getDate() || 30; // approx
+  const diasDoMes = new Date(y, m + 1, 0).getDate(); // approx for current month
   
   let metaVisitas = metaVisitasMes;
   let metaFecharam = metaFecharamMes;
