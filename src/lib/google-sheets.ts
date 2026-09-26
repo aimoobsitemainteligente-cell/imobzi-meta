@@ -1,5 +1,7 @@
 import { google } from "googleapis";
 
+import { formatToSP } from "./time";
+
 /**
  * Função para enviar os dados do lead para uma planilha do Google Sheets.
  * @param leadData Dados mapeados do lead retornados pela Meta.
@@ -54,10 +56,7 @@ export async function sendToGoogleSheets(leadData: any, imobziId?: string | null
 
     // 4. Preparar os dados de acordo com a planilha:
     // A=Data, B=Hora, C=Lead(nome), D=Nº TELEFONE, E=QUAL VIDEO?, F=IMÓVEL
-    const now = new Date();
-    // Forçar formatação manual para evitar problemas de fuso/locale na Vercel
-    const dataString = `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth()+1).toString().padStart(2, '0')}/${now.getFullYear()}`;
-    const horaString = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    const { data: dataString, hora: horaString } = formatToSP(leadData.created_time);
     
     // Para "QUAL VIDEO?" -> Anúncio
     const qualVideo = leadData.ad_name || "N/A";

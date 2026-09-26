@@ -1,35 +1,10 @@
 import { TvDashboardData, Period } from './types';
+import { getStartOfPeriodSP, parseFromSP } from '../time';
 
 export function calculateDashboardData(leads: any[], period: Period = 'hoje'): TvDashboardData {
-  // Obtém a data atual no fuso de São Paulo (UTC-3)
-  const now = new Date();
-  const spOffset = -3 * 60 * 60 * 1000; // -3 hours in ms
-  const utcNow = now.getTime() + (now.getTimezoneOffset() * 60000); // UTC time
-  const spNow = new Date(utcNow + spOffset);
-  
-  const y = spNow.getFullYear();
-  const m = spNow.getMonth(); // 0-11
-  const d = spNow.getDate();
-
-  // Create start of today, week, month in SP timezone, then convert back to UTC ms for comparison
-  const getMsInSp = (year: number, month: number, date: number) => {
-    // Create UTC date that matches SP midnight, then subtract SP offset to get actual UTC time
-    // Actually, simpler: create SP midnight as string, then parse it?
-    // SP midnight = year-month-dateT00:00:00.000-03:00
-    const pad = (n: number) => n.toString().padStart(2, '0');
-    const isoString = `${year}-${pad(month + 1)}-${pad(date)}T00:00:00.000-03:00`;
-    return new Date(isoString).getTime();
-  };
-
-  const startOfToday = getMsInSp(y, m, d);
-  const startOfMonth = getMsInSp(y, m, 1);
-
-  const dayOfWeek = spNow.getDay(); // 0 is Sunday
-  const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-  
-  // Handling negative dates safely by using Date object arithmetic
-  const spStartOfWeek = new Date(y, m, d + diffToMonday);
-  const startOfWeek = getMsInSp(spStartOfWeek.getFullYear(), spStartOfWeek.getMonth(), spStartOfWeek.getDate());
+  const startOfToday = getStartOfPeriodSP('hoje');
+  const startOfWeek = getStartOfPeriodSP('semana');
+  const startOfMonth = getStartOfPeriodSP('mes');
 
   let leadsMeta = 0;
   let leadsOutros = 0;
@@ -51,18 +26,14 @@ export function calculateDashboardData(leads: any[], period: Period = 'hoje'): T
   // Helper para parsear DD/MM/YYYY HH:MM vindo do Google Sheets (Brasil)
   const parseDateTime = (dateTimeStr: string) => {
     if (!dateTimeStr) return 0;
-    if (dateTimeStr.includes('T')) return new Date(dateTimeStr).getTime();
+    if (dateTimeStr.includes('T')) {
+      const ms = new Date(dateTimeStr).getTime();
+      return isNaN(ms) ? 0 : ms;
+    }
     
     const [datePart, timePart] = dateTimeStr.split(' ');
-    if (!datePart) return 0;
-    const dParts = datePart.split('/');
-    if (dParts.length !== 3) return 0;
-    const tParts = (timePart || '00:00').split(':');
-    
-    // As dates from the sheet are in BRT (UTC-3), parse them as such
-    const pad = (n: string) => n.padStart(2, '0');
-    const isoString = `${dParts[2]}-${pad(dParts[1])}-${pad(dParts[0])}T${pad(tParts[0])}:${pad(tParts[1])}:00.000-03:00`;
-    return new Date(isoString).getTime();
+    const parsed = parseFromSP(datePart, timePart);
+    return parsed || 0;
   };
 
   const responseTimes: number[] = [];
@@ -176,7 +147,6 @@ export function calculateDashboardData(leads: any[], period: Period = 'hoje'): T
   // Calculate metas based on period
   const metaVisitasMes = 50;
   const metaFecharamMes = 10;
-  const diasDoMes = new Date(y, m + 1, 0).getDate(); // approx for current month
   
   let metaVisitas = metaVisitasMes;
   let metaFecharam = metaFecharamMes;
