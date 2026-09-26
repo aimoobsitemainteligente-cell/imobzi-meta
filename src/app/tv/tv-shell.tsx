@@ -124,6 +124,18 @@ export function TvShell() {
         } else {
           document.exitFullscreen().catch(() => {});
         }
+      } else if (e.key === 'ArrowRight') {
+        setPeriod(prev => {
+          if (prev === 'hoje') return 'semana';
+          if (prev === 'semana') return 'mes';
+          return 'hoje';
+        });
+      } else if (e.key === 'ArrowLeft') {
+        setPeriod(prev => {
+          if (prev === 'hoje') return 'mes';
+          if (prev === 'semana') return 'hoje';
+          return 'semana';
+        });
       }
     };
     window.addEventListener('keydown', handleKeyDown);
