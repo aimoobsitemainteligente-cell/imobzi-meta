@@ -169,6 +169,8 @@ export function TvShell() {
           if (prev === 'mes') return 'semana';
           return 'hoje';
         });
+      } else if (e.key === 'ArrowUp' || e.key === 'Up' || e.keyCode === 38 || e.key === 'ArrowDown' || e.key === 'Down' || e.keyCode === 40) {
+        setFunnelView(prev => prev === 'GERAL' ? 'META' : 'GERAL');
       }
     };
     document.addEventListener('keydown', handleKeyDown);
