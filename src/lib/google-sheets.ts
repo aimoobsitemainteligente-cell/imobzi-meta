@@ -31,9 +31,10 @@ export async function sendToGoogleSheets(leadData: any) {
 
     const sheets = google.sheets({ version: "v4", auth });
 
-    // Extrair os dados do array field_data do Meta (já que name e phone não vêm soltos)
+    // Extrair os dados do array field_data do Meta (já que name, phone e codigo_imovel não vêm soltos)
     let leadName = "N/A";
     let leadPhone = "N/A";
+    let propertyCode = "";
 
     if (leadData.field_data && Array.isArray(leadData.field_data)) {
       for (const field of leadData.field_data) {
@@ -43,6 +44,9 @@ export async function sendToGoogleSheets(leadData: any) {
         }
         if (fieldName.includes('phone') || fieldName.includes('telefone') || fieldName.includes('celular')) {
           leadPhone = field.values[0] || leadPhone;
+        }
+        if (fieldName.includes('código') || fieldName.includes('codigo') || fieldName.includes('imóvel') || fieldName.includes('imovel') || fieldName.includes('ref')) {
+          propertyCode = field.values[0] || propertyCode;
         }
       }
     }
@@ -57,10 +61,15 @@ export async function sendToGoogleSheets(leadData: any) {
     // Para "QUAL VIDEO?" -> Anúncio
     const qualVideo = leadData.ad_name || "N/A";
 
-    // Para "IMÓVEL" -> Formulário + Campanha
+    // Para "IMÓVEL" -> Código do imóvel na primeira linha, seguido de Formulário e Campanha
     const nomeFormulario = leadData.form_name || "N/A";
     const nomeCampanha = leadData.campaign_name || "N/A";
-    const imovel = `Formulário: ${nomeFormulario}\n🎯 Campanha: ${nomeCampanha}`;
+    
+    let imovel = "";
+    if (propertyCode && propertyCode !== "Não informado") {
+      imovel += `Código: ${propertyCode}\n`;
+    }
+    imovel += `Formulário: ${nomeFormulario}\n🎯 Campanha: ${nomeCampanha}`;
 
     const values = [
       [
