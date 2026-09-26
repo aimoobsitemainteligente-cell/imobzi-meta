@@ -166,8 +166,10 @@ export function TvShell() {
 
   const showDemoModal1 = demoMode === 'modal1';
   const showDemoModal2 = demoMode === 'modal2';
-
-  const theme = PERIOD_THEME[period];
+  
+  // Use a view period para a interface (se a API retornou um fallback de mês, usamos ele para pintar)
+  const viewPeriod = data.period || period;
+  const theme = PERIOD_THEME[viewPeriod];
 
   return (
     <div 
@@ -185,12 +187,12 @@ export function TvShell() {
       <AlertStrip count={data.fila} />
       
       <div className={`transition-transform duration-300 ${data.fila > 0 ? 'translate-y-[4vh]' : ''} h-full flex flex-col`}>
-        <TopBar periodo={period} setPeriodo={setPeriod} lastUpdate={lastUpdate} currentTime={currentTime} />
-        <KpiRow kpis={data.kpis} period={period} theme={theme} />
+        <TopBar periodo={viewPeriod} setPeriodo={setPeriod} lastUpdate={lastUpdate} currentTime={currentTime} />
+        <KpiRow kpis={data.kpis} period={viewPeriod} theme={theme} />
         
         <div className="h-[52vh] flex gap-6 px-8 py-2">
           <div className="w-[58%]">
-            <Funnel stats={data.funnel} view={funnelView} period={period} theme={theme} />
+            <Funnel stats={data.funnel} view={funnelView} period={viewPeriod} theme={theme} />
           </div>
           <div className="w-[42%]">
             <RaceTrack karts={data.race} />
@@ -198,7 +200,7 @@ export function TvShell() {
         </div>
 
         <div className="mt-auto">
-          <FooterTicker campanhaLider={data.campanhaLider} ticker={data.ticker} plantao={data.plantao} period={period} theme={theme} />
+          <FooterTicker campanhaLider={data.campanhaLider} ticker={data.ticker} plantao={data.plantao} period={viewPeriod} theme={theme} />
         </div>
       </div>
 

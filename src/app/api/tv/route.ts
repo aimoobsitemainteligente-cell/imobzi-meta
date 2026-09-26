@@ -10,7 +10,13 @@ export async function GET(request: Request) {
     const period = ['hoje', 'semana', 'mes'].includes(periodParam) ? periodParam : 'hoje';
     
     const leads = await getSheetsData();
-    const dashboardData = calculateDashboardData(leads, period as 'hoje' | 'semana' | 'mes');
+    let dashboardData = calculateDashboardData(leads, period as 'hoje' | 'semana' | 'mes');
+    
+    // Auto-fallback: Se pedir hoje e estiver zerado, mostra o mês
+    if (period === 'hoje' && dashboardData.funnel.entraram === 0) {
+      dashboardData = calculateDashboardData(leads, 'mes');
+    }
+    
     return NextResponse.json(dashboardData);
   } catch (error) {
     console.error("Erro ao carregar dados do sheets:", error);
