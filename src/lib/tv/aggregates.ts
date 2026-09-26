@@ -18,9 +18,33 @@ export function calculateDashboardData(leads: any[]): TvDashboardData {
   let fecharam = 0;
   
   const brokerMap = new Map<string, { visitas: number, name: string }>();
+  const campaignMap = new Map<string, number>();
 
   // Helper para normalizar strings
   const normalize = (s: string) => (s || '').trim().toLowerCase();
+
+  // Helper para parsear DD/MM/YYYY HH:MM
+  const parseDateTime = (dateTimeStr: string) => {
+    if (!dateTimeStr) return 0;
+    if (dateTimeStr.includes('T')) return new Date(dateTimeStr).getTime();
+    
+    const [datePart, timePart] = dateTimeStr.split(' ');
+    if (!datePart) return 0;
+    const dParts = datePart.split('/');
+    if (dParts.length !== 3) return 0;
+    const tParts = (timePart || '00:00').split(':');
+    return new Date(
+      parseInt(dParts[2]), 
+      parseInt(dParts[1]) - 1, 
+      parseInt(dParts[0]), 
+      parseInt(tParts[0] || '0'), 
+      parseInt(tParts[1] || '0')
+    ).getTime();
+  };
+
+  const responseTimes: number[] = [];
+  let sla5MinCount = 0;
+  let totalAtendidosComTempo = 0;
 
   // Sort leads for ticker (newest first)
   const ticker = [...leads].reverse().slice(0, 5).map(l => {
@@ -84,6 +108,47 @@ export function calculateDashboardData(leads: any[]): TvDashboardData {
     }
     if (['proposta', 'ganho'].includes(status)) propostas++;
     if (status === 'ganho') fecharam++;
+
+    // Campaign tracking
+    const adName = (lead.ad_name || '').trim();
+    if (adName) {
+      campaignMap.set(adName, (campaignMap.get(adName) || 0) + 1);
+    }
+
+    // SLA & Tempo Médio
+    const createdTime = parseDateTime(lead.created_at);
+    let primeiroContatoStr = '';
+    if (lead.primeiro_contato_data) {
+      primeiroContatoStr = `${lead.primeiro_contato_data} ${lead.primeiro_contato_hora || '00:00'}`;
+    }
+    const contatoTime = parseDateTime(primeiroContatoStr);
+    
+    if (createdTime > 0 && contatoTime > createdTime) {
+      const diffMinutes = (contatoTime - createdTime) / 1000 / 60;
+      responseTimes.push(diffMinutes);
+      totalAtendidosComTempo++;
+      if (diffMinutes <= 5) {
+        sla5MinCount++;
+      }
+    }
+  }
+
+  // Calculate Median
+  let medianMinutes = 0;
+  if (responseTimes.length > 0) {
+    responseTimes.sort((a, b) => a - b);
+    const mid = Math.floor(responseTimes.length / 2);
+    medianMinutes = responseTimes.length % 2 !== 0 ? responseTimes[mid] : (responseTimes[mid - 1] + responseTimes[mid]) / 2;
+  }
+
+  // Top Campaign
+  let topCampaign = null;
+  let maxCampCount = 0;
+  for (const [name, count] of campaignMap.entries()) {
+    if (count > maxCampCount) {
+      maxCampCount = count;
+      topCampaign = { nome: name, count };
+    }
   }
 
   // Race kart
@@ -108,7 +173,11 @@ export function calculateDashboardData(leads: any[]): TvDashboardData {
       leads_hoje: { total: leadsHojeMeta + leadsHojeOutros, meta: leadsHojeMeta, outros: leadsHojeOutros },
       leads_mes: { total: leadsMesMeta + leadsMesOutros, meta: leadsMesMeta, outros: leadsMesOutros },
       sem_dono: semDono,
-      sla_5min: { percent: 0, atendidos: 0, total_atendidos_periodo: 0 }, // TODO
+      sla_5min: { 
+        percent: totalAtendidosComTempo > 0 ? Math.round((sla5MinCount / totalAtendidosComTempo) * 100) : 0, 
+        atendidos: sla5MinCount, 
+        total_atendidos_periodo: totalAtendidosComTempo 
+      },
       visitas: { total: visitas, meta: 50 },
       fechamentos: { total: fecharam, meta: 10 }
     },
@@ -121,11 +190,11 @@ export function calculateDashboardData(leads: any[]): TvDashboardData {
       fecharam,
       metaPercent: leads.length > 0 ? Math.round((leads.filter(l => l.origem === 'META').length / leads.length) * 100) : 0,
       outrosPercent: leads.length > 0 ? Math.round((leads.filter(l => l.origem !== 'META').length / leads.length) * 100) : 0,
-      tempoMedioPrimeiroContato: 0
+      tempoMedioPrimeiroContato: Math.round(medianMinutes * 60) // in seconds for the frontend to format
     },
     race,
     ticker,
-    campanhaLider: null,
+    campanhaLider: topCampaign,
     plantao: { atual: 'Equipe', proximo: '-' },
     fila: semDono
   };
