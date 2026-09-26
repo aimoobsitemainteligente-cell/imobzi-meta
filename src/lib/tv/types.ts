@@ -59,6 +59,7 @@ export interface Campanha {
 // Derived Types for TV Dashboard
 export interface Kpis {
   leads_hoje: { total: number, meta: number, outros: number };
+  leads_mes: { total: number, meta: number, outros: number };
   sem_dono: number;
   sla_5min: { percent: number, atendidos: number, total_atendidos_periodo: number };
   visitas: { total: number, meta: number };

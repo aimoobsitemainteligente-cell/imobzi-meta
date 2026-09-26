@@ -8,9 +8,11 @@ export function KpiRow({ kpis }: KpiRowProps) {
   return (
     <div className="h-[18vh] px-8 py-4 grid grid-cols-5 gap-6">
       <KpiCard
-        title="LEADS HOJE"
-        value={kpis.leads_hoje.total}
-        sub={`${kpis.leads_hoje.meta} Lead Meta Business · ${kpis.leads_hoje.outros} outros`}
+        title={kpis.leads_hoje.total > 0 ? "LEADS HOJE" : "LEADS MÊS"}
+        value={kpis.leads_hoje.total > 0 ? kpis.leads_hoje.total : kpis.leads_mes.total}
+        sub={kpis.leads_hoje.total > 0 
+          ? `${kpis.leads_hoje.meta} Lead Meta Business · ${kpis.leads_hoje.outros} outros`
+          : `${kpis.leads_mes.meta} Lead Meta Business · ${kpis.leads_mes.outros} outros`}
       />
       <KpiCard
         title="SEM DONO"

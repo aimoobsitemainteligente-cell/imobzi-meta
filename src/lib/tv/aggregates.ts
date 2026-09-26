@@ -3,9 +3,11 @@ import { TvDashboardData } from './types';
 export function calculateDashboardData(leads: any[]): TvDashboardData {
   const hoje = new Date().toLocaleDateString('pt-BR');
   
-  // Count leads from today
-  let leadsMeta = 0;
-  let leadsOutros = 0;
+  // Count leads from today and month
+  let leadsHojeMeta = 0;
+  let leadsHojeOutros = 0;
+  let leadsMesMeta = 0;
+  let leadsMesOutros = 0;
   let semDono = 0;
   
   let entraram = leads.length;
@@ -36,12 +38,21 @@ export function calculateDashboardData(leads: any[]): TvDashboardData {
     };
   });
 
+  const mesAtual = new Date().toLocaleDateString('pt-BR', { month: '2-digit', year: 'numeric' }); // MM/YYYY
+
   for (const lead of leads) {
+    const dataParts = lead.created_at.split(' ')[0].split('/'); // DD/MM/YYYY
     const dataCriacao = lead.created_at.split(' ')[0];
+    const mesLead = dataParts.length === 3 ? `${dataParts[1]}/${dataParts[2]}` : '';
     
     if (dataCriacao === hoje) {
-      if (lead.origem === 'META') leadsMeta++;
-      else leadsOutros++;
+      if (lead.origem === 'META') leadsHojeMeta++;
+      else leadsHojeOutros++;
+    }
+    
+    if (mesLead === mesAtual) {
+      if (lead.origem === 'META') leadsMesMeta++;
+      else leadsMesOutros++;
     }
     
     const corretor = (lead.corretor_nome || '').trim();
@@ -94,7 +105,8 @@ export function calculateDashboardData(leads: any[]): TvDashboardData {
 
   return {
     kpis: {
-      leads_hoje: { total: leadsMeta + leadsOutros, meta: leadsMeta, outros: leadsOutros },
+      leads_hoje: { total: leadsHojeMeta + leadsHojeOutros, meta: leadsHojeMeta, outros: leadsHojeOutros },
+      leads_mes: { total: leadsMesMeta + leadsMesOutros, meta: leadsMesMeta, outros: leadsMesOutros },
       sem_dono: semDono,
       sla_5min: { percent: 0, atendidos: 0, total_atendidos_periodo: 0 }, // TODO
       visitas: { total: visitas, meta: 50 },
