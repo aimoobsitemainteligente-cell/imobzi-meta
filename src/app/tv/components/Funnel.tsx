@@ -24,7 +24,7 @@ export function Funnel({ stats, view }: FunnelProps) {
         </h2>
         <div className="flex bg-slate-900 rounded-full border border-slate-700 p-0.5">
           <button className={`text-xs font-bold px-4 py-1.5 rounded-full transition-colors ${view === 'GERAL' ? 'bg-teal-500/10 text-teal-400 border border-teal-500/30' : 'text-slate-500'}`}>GERAL</button>
-          <button className={`text-xs font-bold px-4 py-1.5 rounded-full transition-colors ${view === 'META' ? 'bg-teal-500/10 text-teal-400 border border-teal-500/30' : 'text-slate-500'}`}>META</button>
+          <button className={`text-xs font-bold px-4 py-1.5 rounded-full transition-colors ${view === 'META' ? 'bg-teal-500/10 text-teal-400 border border-teal-500/30' : 'text-slate-500'}`}>LEAD META BUSINESS</button>
         </div>
       </div>
 
@@ -78,7 +78,7 @@ export function Funnel({ stats, view }: FunnelProps) {
           <div className="flex items-center gap-3">
             <BarChart3 className="text-teal-400 w-6 h-6" />
             <div>
-              <div className="text-slate-400 text-xs">Meta</div>
+              <div className="text-slate-400 text-xs">Lead Meta Business</div>
               <div className="font-semibold text-white">{Math.round(stats.entraram * (stats.metaPercent/100))} leads</div>
             </div>
           </div>

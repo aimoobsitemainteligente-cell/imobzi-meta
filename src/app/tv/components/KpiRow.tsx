@@ -10,7 +10,7 @@ export function KpiRow({ kpis }: KpiRowProps) {
       <KpiCard
         title="LEADS HOJE"
         value={kpis.leads_hoje.total}
-        sub={`${kpis.leads_hoje.meta} Meta · ${kpis.leads_hoje.outros} outros`}
+        sub={`${kpis.leads_hoje.meta} Lead Meta Business · ${kpis.leads_hoje.outros} outros`}
       />
       <KpiCard
         title="SEM DONO"

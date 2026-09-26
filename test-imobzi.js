@@ -21,7 +21,9 @@ async function test() {
 
   const json = await res.json();
   console.log("Total na pagina:", json.contacts ? json.contacts.length : 0);
-  console.log("Cursor:", json.cursor);
+  if (json.contacts && json.contacts.length > 0) {
+    console.log("Exemplo:", JSON.stringify(json.contacts[0], null, 2));
+  }
 }
 
 test();

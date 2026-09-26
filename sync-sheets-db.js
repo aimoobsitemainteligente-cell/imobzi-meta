@@ -41,7 +41,7 @@ async function syncWithDB() {
   try {
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: spreadsheetId,
-      range: "Página1!A1:W500", 
+      range: "Página1!A1:W20000", 
     });
     sheetRows = response.data.values || [];
   } catch(e) {

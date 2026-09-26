@@ -34,12 +34,16 @@ async function run() {
   console.log("Tabela criada.");
 
   console.log("Baixando contatos do Imobzi e salvando no Neon...");
-  let page = 1;
+  let cursor = "";
   let hasMore = true;
   let totalInserted = 0;
+  let page = 1;
 
   while (hasMore) {
-    const url = `https://api.imobzi.app/v1/contacts?limit=100&page=${page}`;
+    const url = cursor 
+      ? `https://api.imobzi.app/v1/contacts?limit=100&cursor=${cursor}`
+      : `https://api.imobzi.app/v1/contacts?limit=100`;
+
     try {
       const res = await fetch(url, {
         headers: { "X-Imobzi-Secret": apiSecret }
@@ -52,7 +56,6 @@ async function run() {
           const email = c.email || (c.emails && c.emails.length > 0 ? c.emails[0] : "");
           const link = c.code ? `https://my.imobzi.com/#/contacts/person-${c.code.replace("person-", "")}` : "";
 
-          // Inserir ou atualizar
           await sql`
             INSERT INTO imobzi_contacts (imobzi_db_id, imobzi_code, name, phone, email, imobzi_link)
             VALUES (${c.contact_id || null}, ${c.code || null}, ${c.fullname || c.name || "N/A"}, ${phone}, ${email}, ${link})
@@ -68,8 +71,10 @@ async function run() {
         console.log(`Baixados e salvos: ${totalInserted} contatos (Página ${page})`);
         
         page++;
-        if (data.contacts.length < 50) {
-          hasMore = false;
+        if (data.cursor) {
+          cursor = data.cursor;
+        } else {
+          hasMore = false; // No more cursor
         }
       } else {
         hasMore = false;
