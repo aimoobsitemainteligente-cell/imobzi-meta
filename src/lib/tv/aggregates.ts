@@ -96,7 +96,7 @@ export function calculateDashboardData(leads: any[], period: Period = 'hoje'): T
   let sla5MinCount = 0;
   let totalAtendidosComTempo = 0;
   
-  const ticker: any[] = [];
+  const ticker: string[] = [];
   
   const normalize = (s: string) => (s || '').toLowerCase().trim();
   const seenIds = new Set<string>();
@@ -114,6 +114,8 @@ export function calculateDashboardData(leads: any[], period: Period = 'hoje'): T
 
   // Pre-filter leads for the period (Only Meta Leads)
   const metaLeadsOnly = leads.filter(l => (l.origem || '').toUpperCase() === 'META');
+  let coldLeadsCount = 0;
+  const nowMs = Date.now();
 
   for (const l of metaLeadsOnly) {
     const createdTime = parseDateTime(l.created_at);
@@ -123,7 +125,12 @@ export function calculateDashboardData(leads: any[], period: Period = 'hoje'): T
     const isSemDono = !corretor || corretor.toLowerCase() === 'sem dono';
     const status = normalize(l.status);
     
-    if (isSemDono && status === 'novo') semDono++;
+    if (isSemDono && status === 'novo') {
+      semDono++;
+      if (nowMs - createdTime > 10 * 60 * 1000) {
+        coldLeadsCount++;
+      }
+    }
     
     if (isDateInPeriod(createdTime, period)) {
       validLeadsInPeriod.push(l);
@@ -172,14 +179,30 @@ export function calculateDashboardData(leads: any[], period: Period = 'hoje'): T
     seenIds.add(l.lead_id);
     const nameParts = nameStr.split(' ');
     const firstName = nameParts[0];
-    const masked = firstName.length > 1 ? firstName[0] + '***' : '***';
-    const finalName = nameParts.length > 1 ? `${masked} ${nameParts[nameParts.length - 1]}` : masked;
-    ticker.push({
-      lead_id: l.lead_id,
-      nome_mascarado: finalName,
-      estagio: l.status || 'Novo',
-      time_ago: l.created_at.split(' ')[1] || 'Recente'
-    });
+    const corretor = (l.corretor_nome || '').trim();
+    const isSemDono = !corretor || corretor.toLowerCase() === 'sem dono';
+    
+    let message = '';
+    const adInfo = l.ad_name ? `da campanha ${l.ad_name}` : 'do Meta Ads';
+
+    if (isSemDono) {
+      message = `👀 Novo lead aguardando atendimento (${adInfo})`;
+    } else {
+      const status = normalize(l.status);
+      if (status === 'novo' || status === '') {
+        message = `👤 ${corretor} assumiu um lead ${adInfo}`;
+      } else if (['visita agendada'].includes(status)) {
+        message = `📅 ${corretor} agendou visita com lead ${adInfo}`;
+      } else if (['proposta'].includes(status)) {
+        message = `📝 ${corretor} está com proposta para lead ${adInfo}`;
+      } else if (['ganho'].includes(status)) {
+        message = `🏆 ${corretor} FECHOU NEGÓCIO com lead ${adInfo}`;
+      } else {
+        message = `💬 ${corretor} está atendendo lead ${adInfo}`;
+      }
+    }
+
+    ticker.push(message);
   }
 
   // Calculate metas based on period
@@ -212,15 +235,32 @@ export function calculateDashboardData(leads: any[], period: Period = 'hoje'): T
   }
 
   // Calculate Race Kart (this is ALWAYS month calendar)
-  const raceBrokerMap = new Map<string, { visitas: number, name: string }>();
-  for (const lead of leads) {
+  const raceBrokerMap = new Map<string, { visitas: number, leads_recebidos: number, fechamentos: number, responseTimesMs: number[], name: string }>();
+  for (const lead of metaLeadsOnly) {
     const createdTime = parseDateTime(lead.created_at);
     if (createdTime === 0 || createdTime < startOfMonth) continue;
     const status = normalize(lead.status);
     const corretor = (lead.corretor_nome || '').trim();
-    if (['visita agendada', 'proposta', 'ganho'].includes(status) && corretor && corretor.toLowerCase() !== 'sem dono') {
-      const b = raceBrokerMap.get(corretor) || { visitas: 0, name: corretor };
-      b.visitas++;
+    
+    if (corretor && corretor.toLowerCase() !== 'sem dono') {
+      const b = raceBrokerMap.get(corretor) || { visitas: 0, leads_recebidos: 0, fechamentos: 0, responseTimesMs: [], name: corretor };
+      b.leads_recebidos++;
+      
+      if (['visita agendada', 'proposta', 'ganho'].includes(status)) {
+        b.visitas++;
+      }
+      if (status === 'ganho') {
+        b.fechamentos++;
+      }
+      
+      if (lead.primeiro_contato_data) {
+        const primeiroContatoStr = `${lead.primeiro_contato_data} ${lead.primeiro_contato_hora || '00:00'}`;
+        const contatoTime = parseDateTime(primeiroContatoStr);
+        if (contatoTime > createdTime) {
+          b.responseTimesMs.push(contatoTime - createdTime);
+        }
+      }
+      
       raceBrokerMap.set(corretor, b);
     }
   }
@@ -228,6 +268,11 @@ export function calculateDashboardData(leads: any[], period: Period = 'hoje'): T
   const race = Array.from(raceBrokerMap.values())
     .map(b => {
       const meta = 10;
+      let avgResponseTime = 0;
+      if (b.responseTimesMs.length > 0) {
+        const sum = b.responseTimesMs.reduce((a, v) => a + v, 0);
+        avgResponseTime = Math.round((sum / b.responseTimesMs.length) / 1000 / 60);
+      }
       return {
         corretor_id: b.name,
         nome: b.name,
@@ -235,10 +280,19 @@ export function calculateDashboardData(leads: any[], period: Period = 'hoje'): T
         position: 0,
         percent: Math.min(100, Math.round((b.visitas / meta) * 100)),
         visitas: b.visitas,
-        meta: meta
+        meta: meta,
+        leads_recebidos: b.leads_recebidos,
+        fechamentos: b.fechamentos,
+        avgResponseTime: avgResponseTime
       };
     })
-    .sort((a, b) => b.visitas - a.visitas)
+    .sort((a, b) => {
+      // Sort primarily by response time if they have one, fastest first. Then by visits
+      if (a.avgResponseTime > 0 && b.avgResponseTime > 0) {
+        if (a.avgResponseTime !== b.avgResponseTime) return a.avgResponseTime - b.avgResponseTime;
+      }
+      return b.visitas - a.visitas;
+    })
     .map((b, idx) => ({ ...b, position: idx + 1 }));
 
   // CALCULATE FUNNELS
@@ -275,6 +329,7 @@ export function calculateDashboardData(leads: any[], period: Period = 'hoje'): T
     campanhaLider: topCampaign,
     plantao: { atual: 'Equipe', proximo: '-' },
     fila: semDono,
+    coldLeadsCount,
     origens,
     campanhas,
     latestLeads

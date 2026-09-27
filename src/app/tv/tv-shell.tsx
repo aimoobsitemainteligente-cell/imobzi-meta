@@ -245,7 +245,7 @@ export function TvShell() {
     >
       <div className="absolute top-0 left-0 right-0 h-[2px] bg-[var(--accent)] transition-colors duration-200" />
       
-      <AlertStrip count={data.fila} />
+      <AlertStrip count={data.fila} coldCount={data.coldLeadsCount} />
       
       <div className={`transition-transform duration-300 ${data.fila > 0 ? 'translate-y-[4vh]' : ''} h-full flex flex-col`}>
         <TopBar periodo={viewPeriod} setPeriodo={setPeriod} lastUpdate={lastUpdate} currentTime={currentTime} />

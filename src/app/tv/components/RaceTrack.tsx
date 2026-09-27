@@ -12,7 +12,7 @@ export function RaceTrack({ karts }: RaceTrackProps) {
     <div className="h-full bg-[#121820] border border-slate-800 rounded-xl p-6 flex flex-col justify-between">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-semibold text-slate-300 tracking-wide uppercase">
-          CORRIDA DO MÊS <span className="text-slate-500 font-normal lowercase tracking-normal">· meta em visitas</span>
+          RANKING DO MÊS <span className="text-slate-500 font-normal lowercase tracking-normal">· sla e conversão</span>
         </h2>
         <div className="flex items-center gap-2 text-sm text-slate-400 font-semibold">
           <Flag className="w-4 h-4 text-white" /> {karts[0]?.meta || 0} visitas
@@ -57,8 +57,17 @@ export function RaceTrack({ karts }: RaceTrackProps) {
                 </div>
               </div>
 
-              <div className="w-24 shrink-0 text-right flex items-center justify-end gap-4 font-semibold">
-                <span className="text-slate-300">{kart.visitas}/{kart.meta}</span>
+              <div className="w-[180px] shrink-0 text-right flex items-center justify-end gap-3 font-semibold">
+                <div className="flex flex-col items-end">
+                  <span className="text-[10px] text-slate-500 font-bold uppercase">SLA Médio</span>
+                  <span className={`text-sm ${kart.avgResponseTime > 0 && kart.avgResponseTime <= 10 ? 'text-green-400' : kart.avgResponseTime > 10 && kart.avgResponseTime <= 30 ? 'text-amber-400' : 'text-slate-300'}`}>
+                    {kart.avgResponseTime > 0 ? `${kart.avgResponseTime} min` : 'N/A'}
+                  </span>
+                </div>
+                <div className="flex flex-col items-end mr-2">
+                  <span className="text-[10px] text-slate-500 font-bold uppercase">Visitas</span>
+                  <span className="text-slate-300">{kart.visitas}/{kart.meta}</span>
+                </div>
                 <span className={`px-2 py-1 text-xs rounded border ${pColor}`}>P{kart.position}</span>
               </div>
             </div>

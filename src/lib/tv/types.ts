@@ -88,6 +88,9 @@ export interface RaceKart {
   visitas: number;
   meta: number;
   boost?: boolean; // if event in last 60s
+  leads_recebidos: number;
+  fechamentos: number;
+  avgResponseTime: number; // in minutes
 }
 
 export interface TvDashboardData {
@@ -96,10 +99,11 @@ export interface TvDashboardData {
   funnel: FunnelStats;
   funnelMeta?: FunnelStats;
   race: RaceKart[];
-  ticker: { lead_id: string, nome_mascarado: string, estagio: string, time_ago: string }[];
+  ticker: string[];
   campanhaLider: { nome: string, count: number } | null;
   plantao: { atual?: string, proximo?: string };
   fila: number; // leads sem dono
+  coldLeadsCount: number; // leads sem dono > 10 min
   origens?: { nome: string, count: number }[];
   latestLeads?: any[];
   campanhas?: { nome: string, leads: number, visitas: number, fechamentos: number }[];
