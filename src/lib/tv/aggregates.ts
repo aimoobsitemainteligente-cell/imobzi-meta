@@ -2,6 +2,17 @@ import { TvDashboardData, Period } from './types';
 import { getStartOfPeriodSP, parseFromSP } from '../time';
 
 
+export const parseDateTime = (dateTimeStr: string) => {
+  if (!dateTimeStr) return 0;
+  if (dateTimeStr.includes('T')) {
+    const ms = new Date(dateTimeStr).getTime();
+    return isNaN(ms) ? 0 : ms;
+  }
+  const [datePart, timePart] = dateTimeStr.split(' ');
+  const parsed = parseFromSP(datePart, timePart);
+  return parsed || 0;
+};
+
 function calcFunnel(filteredLeads: any[], allLeadsForPercent: any[]) {
   let entraram = 0;
   let atendidos = 0;
