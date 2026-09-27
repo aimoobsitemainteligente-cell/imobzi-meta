@@ -91,6 +91,7 @@ export function calculateDashboardData(leads: any[], period: Period = 'hoje'): T
   
   const brokerMap = new Map<string, { visitas: number, name: string }>();
   const campaignMap = new Map<string, number>();
+  const origensMap = new Map<string, number>();
   
   let sla5MinCount = 0;
   let totalAtendidosComTempo = 0;
@@ -151,6 +152,9 @@ export function calculateDashboardData(leads: any[], period: Period = 'hoje'): T
       if (adName) {
         campaignMap.set(adName, (campaignMap.get(adName) || 0) + 1);
       }
+      
+      const origemNome = (l.origem && l.origem.toUpperCase() !== 'META') ? l.origem : (l.origem === 'META' ? 'Meta Ads' : 'Desconhecido');
+      origensMap.set(origemNome, (origensMap.get(origemNome) || 0) + 1);
     }
   }
 
@@ -235,6 +239,10 @@ export function calculateDashboardData(leads: any[], period: Period = 'hoje'): T
   const funnelGeral = calcFunnel(validLeadsInPeriod, validLeadsInPeriod);
   const funnelMeta = calcFunnel(validLeadsInPeriod.filter(l => l.origem === 'META'), validLeadsInPeriod);
 
+  const origens = Array.from(origensMap.entries())
+    .map(([nome, count]) => ({ nome, count }))
+    .sort((a, b) => b.count - a.count);
+
   return {
     period,
     kpis: {
@@ -254,6 +262,7 @@ export function calculateDashboardData(leads: any[], period: Period = 'hoje'): T
     ticker,
     campanhaLider: topCampaign,
     plantao: { atual: 'Equipe', proximo: '-' },
-    fila: semDono
+    fila: semDono,
+    origens,
   };
 }
