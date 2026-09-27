@@ -94,6 +94,7 @@ export interface TvDashboardData {
   period: Period;
   kpis: Kpis;
   funnel: FunnelStats;
+  funnelMeta?: FunnelStats;
   race: RaceKart[];
   ticker: { lead_id: string, nome_mascarado: string, estagio: string, time_ago: string }[];
   campanhaLider: { nome: string, count: number } | null;

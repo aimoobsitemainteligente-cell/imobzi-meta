@@ -227,7 +227,7 @@ export function TvShell() {
         
         <div className="h-[52vh] flex gap-6 px-8 py-2">
           <div className="w-[58%]">
-            <Funnel stats={data.funnel} view={funnelView} period={viewPeriod} theme={theme} />
+            <Funnel stats={funnelView === 'META' && data.funnelMeta ? data.funnelMeta : data.funnel} view={funnelView} period={viewPeriod} theme={theme} />
           </div>
           <div className="w-[42%]">
             <RaceTrack karts={data.race} />
