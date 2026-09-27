@@ -10,7 +10,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --animate-ticker: ticker 30s linear infinite;
+  --animate-ticker: ticker 90s linear infinite;
 
   @keyframes ticker {
     0% { transform: translateX(0); }
