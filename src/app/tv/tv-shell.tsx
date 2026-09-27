@@ -128,14 +128,17 @@ export function TvShell() {
     return () => clearInterval(timer);
   }, []);
 
+  const [userPausedFunnel, setUserPausedFunnel] = useState(false);
+
   useEffect(() => {
+    // 40s auto rotation for funnel ONLY in 'hoje' and NOT paused by user
+    if (period !== 'hoje' || userPausedFunnel) return;
+    
     const rot = setInterval(() => {
-      if (data && data.fila === 0) {
-        setFunnelView(v => v === 'GERAL' ? 'META' : 'GERAL');
-      }
-    }, 25000);
+      setFunnelView(v => v === 'GERAL' ? 'META' : 'GERAL');
+    }, 40000);
     return () => clearInterval(rot);
-  }, [data?.fila]);
+  }, [period, userPausedFunnel]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -155,21 +158,18 @@ export function TvShell() {
         }
       } else if (e.key === 'ArrowRight' || e.key === 'Right' || e.keyCode === 39) {
         setPeriod(prev => {
-          if (prev === 'hoje') return 'semana';
-          if (prev === 'semana') return 'mes';
-          if (prev === 'mes') return 'trimestre';
-          if (prev === 'trimestre') return 'todo_periodo';
-          return 'hoje';
+          const next = prev === 'hoje' ? 'semana' : prev === 'semana' ? 'mes' : prev === 'mes' ? 'trimestre' : prev === 'trimestre' ? 'todo_periodo' : 'hoje';
+          if (next === 'hoje') setUserPausedFunnel(false);
+          return next;
         });
       } else if (e.key === 'ArrowLeft' || e.key === 'Left' || e.keyCode === 37) {
         setPeriod(prev => {
-          if (prev === 'hoje') return 'todo_periodo';
-          if (prev === 'todo_periodo') return 'trimestre';
-          if (prev === 'trimestre') return 'mes';
-          if (prev === 'mes') return 'semana';
-          return 'hoje';
+          const next = prev === 'hoje' ? 'todo_periodo' : prev === 'todo_periodo' ? 'trimestre' : prev === 'trimestre' ? 'mes' : prev === 'mes' ? 'semana' : 'hoje';
+          if (next === 'hoje') setUserPausedFunnel(false);
+          return next;
         });
       } else if (e.key === 'ArrowUp' || e.key === 'Up' || e.keyCode === 38 || e.key === 'ArrowDown' || e.key === 'Down' || e.keyCode === 40) {
+        setUserPausedFunnel(true);
         setFunnelView(prev => prev === 'GERAL' ? 'META' : 'GERAL');
       }
     };
