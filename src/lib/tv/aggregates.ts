@@ -90,7 +90,7 @@ export function calculateDashboardData(leads: any[], period: Period = 'hoje'): T
   let semDono = 0;
   
   const brokerMap = new Map<string, { visitas: number, name: string }>();
-  const campaignMap = new Map<string, number>();
+  const campaignMap = new Map<string, { leads: number, visitas: number, fechamentos: number }>();
   const origensMap = new Map<string, number>();
   
   let sla5MinCount = 0;
@@ -112,8 +112,10 @@ export function calculateDashboardData(leads: any[], period: Period = 'hoje'): T
     return true;
   };
 
-  // Pre-filter leads for the period
-  for (const l of leads) {
+  // Pre-filter leads for the period (Only Meta Leads)
+  const metaLeadsOnly = leads.filter(l => (l.origem || '').toUpperCase() === 'META');
+
+  for (const l of metaLeadsOnly) {
     const createdTime = parseDateTime(l.created_at);
     if (createdTime === 0) continue;
     
@@ -150,7 +152,11 @@ export function calculateDashboardData(leads: any[], period: Period = 'hoje'): T
       
       const adName = (l.ad_name || '').trim();
       if (adName) {
-        campaignMap.set(adName, (campaignMap.get(adName) || 0) + 1);
+        const camp = campaignMap.get(adName) || { leads: 0, visitas: 0, fechamentos: 0 };
+        camp.leads++;
+        if (['visita agendada', 'proposta', 'ganho'].includes(status)) camp.visitas++;
+        if (status === 'ganho') camp.fechamentos++;
+        campaignMap.set(adName, camp);
       }
       
       const origemNome = (l.origem && l.origem.toUpperCase() !== 'META') ? l.origem : (l.origem === 'META' ? 'Meta Ads' : 'Desconhecido');
@@ -159,7 +165,7 @@ export function calculateDashboardData(leads: any[], period: Period = 'hoje'): T
   }
 
   // Generate Ticker
-  for (const l of leads.slice(0, 150)) {
+  for (const l of metaLeadsOnly.slice(0, 150)) {
     if (seenIds.has(l.lead_id)) continue;
     const nameStr = (l.nome || '').trim();
     if (!nameStr || nameStr.toLowerCase() === 'nome_do_lead' || nameStr.includes('{')) continue;
@@ -198,10 +204,10 @@ export function calculateDashboardData(leads: any[], period: Period = 'hoje'): T
   // Top Campaign
   let topCampaign = null;
   let maxCampCount = 0;
-  for (const [name, count] of campaignMap.entries()) {
-    if (count > maxCampCount) {
-      maxCampCount = count;
-      topCampaign = { nome: name, count };
+  for (const [name, stats] of campaignMap.entries()) {
+    if (stats.leads > maxCampCount) {
+      maxCampCount = stats.leads;
+      topCampaign = { nome: name, count: stats.leads };
     }
   }
 
@@ -243,26 +249,34 @@ export function calculateDashboardData(leads: any[], period: Period = 'hoje'): T
     .map(([nome, count]) => ({ nome, count }))
     .sort((a, b) => b.count - a.count);
 
+  const campanhas = Array.from(campaignMap.entries())
+    .map(([nome, stats]) => ({ nome, ...stats }))
+    .sort((a, b) => b.leads - a.leads);
+
+  const latestLeads = metaLeadsOnly.slice(0, 20);
+
   return {
     period,
     kpis: {
-      leads: { total: leadsMeta + leadsOutros, meta: leadsMeta, outros: leadsOutros },
+      leads: { total: validLeadsInPeriod.length, meta: validLeadsInPeriod.length, outros: 0 },
       sem_dono: semDono,
       sla_5min: { 
         percent: totalAtendidosComTempo > 0 ? Math.round((sla5MinCount / totalAtendidosComTempo) * 100) : 0, 
         atendidos: sla5MinCount, 
         total_atendidos_periodo: totalAtendidosComTempo 
       },
-      visitas: { total: funnelGeral.visitas, meta: metaVisitas },
-      fechamentos: { total: funnelGeral.fecharam, meta: metaFecharam }
+      visitas: { total: funnelGeral.visitas, meta: funnelGeral.visitas },
+      fechamentos: { total: funnelGeral.fecharam, meta: funnelGeral.fecharam }
     },
     funnel: funnelGeral,
-    funnelMeta: funnelMeta,
+    funnelMeta: funnelGeral,
     race,
     ticker,
     campanhaLider: topCampaign,
     plantao: { atual: 'Equipe', proximo: '-' },
     fila: semDono,
     origens,
+    campanhas,
+    latestLeads
   };
 }

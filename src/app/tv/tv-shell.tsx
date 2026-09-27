@@ -11,7 +11,7 @@ import { FooterTicker } from './components/FooterTicker';
 import { ModalNewLead } from './components/ModalNewLead';
 import { ModalAttended } from './components/ModalAttended';
 import { AlertStrip } from './components/AlertStrip';
-import { Origens } from './components/Origens';
+import { Campanhas } from './components/Campanhas';
 
 const PERIOD_THEME = {
   hoje: {
@@ -61,10 +61,18 @@ export function TvShell() {
   const [events, setEvents] = useState<SheetEvent[]>([]);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
-  const [funnelView, setFunnelView] = useState<'GERAL' | 'META'>('GERAL');
+  const [funnelView, setFunnelView] = useState<'GERAL' | 'META'>('META');
   const [period, setPeriod] = useState<Period>('hoje');
   
   const [demoMode, setDemoMode] = useState<string | null>(null);
+
+  // Modal State
+  const [activeModal, setActiveModal] = useState<{
+    type: 'new' | 'attended';
+    data: any;
+  } | null>(null);
+
+  const previousLeadsMap = useRef<Map<string, any>>(new Map());
 
   const fetchData = useCallback(async () => {
     try {
@@ -129,17 +137,39 @@ export function TvShell() {
     return () => clearInterval(timer);
   }, []);
 
-  const [userPausedFunnel, setUserPausedFunnel] = useState(false);
-
+  // Memory and Modal Logic
   useEffect(() => {
-    // 40s auto rotation for funnel ONLY in 'hoje' and NOT paused by user
-    if (period !== 'hoje' || userPausedFunnel) return;
-    
-    const rot = setInterval(() => {
-      setFunnelView(v => v === 'GERAL' ? 'META' : 'GERAL');
-    }, 40000);
-    return () => clearInterval(rot);
-  }, [period, userPausedFunnel]);
+    if (!data?.latestLeads) return;
+
+    let modalToTrigger: any = null;
+
+    data.latestLeads.forEach(lead => {
+      const prev = previousLeadsMap.current.get(lead.lead_id);
+      
+      if (!prev) {
+        // We only trigger "new" if the memory was already initialized, 
+        // to prevent firing on first load for all leads
+        if (previousLeadsMap.current.size > 0) {
+          modalToTrigger = { type: 'new', data: lead };
+        }
+      } else {
+        const prevCorretor = prev.corretor_nome?.toLowerCase() || 'sem dono';
+        const currCorretor = lead.corretor_nome?.toLowerCase() || 'sem dono';
+
+        if ((prevCorretor === 'sem dono' || prevCorretor === '') && (currCorretor !== 'sem dono' && currCorretor !== '')) {
+          // It was unassigned, now someone has it!
+          modalToTrigger = { type: 'attended', data: lead };
+        }
+      }
+      
+      previousLeadsMap.current.set(lead.lead_id, lead);
+    });
+
+    if (modalToTrigger && !activeModal) {
+      setActiveModal(modalToTrigger);
+      setTimeout(() => setActiveModal(null), 8000); // hide after 8s
+    }
+  }, [data?.latestLeads]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -160,18 +190,13 @@ export function TvShell() {
       } else if (e.key === 'ArrowRight' || e.key === 'Right' || e.keyCode === 39) {
         setPeriod(prev => {
           const next = prev === 'hoje' ? 'semana' : prev === 'semana' ? 'mes' : prev === 'mes' ? 'trimestre' : prev === 'trimestre' ? 'todo_periodo' : 'hoje';
-          if (next === 'hoje') setUserPausedFunnel(false);
           return next;
         });
       } else if (e.key === 'ArrowLeft' || e.key === 'Left' || e.keyCode === 37) {
         setPeriod(prev => {
           const next = prev === 'hoje' ? 'todo_periodo' : prev === 'todo_periodo' ? 'trimestre' : prev === 'trimestre' ? 'mes' : prev === 'mes' ? 'semana' : 'hoje';
-          if (next === 'hoje') setUserPausedFunnel(false);
           return next;
         });
-      } else if (e.key === 'ArrowUp' || e.key === 'Up' || e.keyCode === 38 || e.key === 'ArrowDown' || e.key === 'Down' || e.keyCode === 40) {
-        setUserPausedFunnel(true);
-        setFunnelView(prev => prev === 'GERAL' ? 'META' : 'GERAL');
       }
     };
     document.addEventListener('keydown', handleKeyDown);
@@ -228,8 +253,8 @@ export function TvShell() {
         
         <div className="h-[52vh] flex gap-6 px-8 py-2">
           <div className="w-[58%] flex flex-col justify-between">
-            <Funnel stats={funnelView === 'META' && data.funnelMeta ? data.funnelMeta : data.funnel} view={funnelView} period={viewPeriod} theme={theme} />
-            <Origens origens={data.origens} theme={theme} />
+            <Funnel stats={data.funnel} view={funnelView} period={viewPeriod} theme={theme} />
+            <Campanhas campanhas={data.campanhas} theme={theme} />
           </div>
           <div className="w-[42%]">
             <RaceTrack karts={data.race} />
@@ -247,6 +272,22 @@ export function TvShell() {
       
       {showDemoModal2 && (
         <ModalAttended corretor="Maria" leadNome="Carlos Souza" tempo="00:32" />
+      )}
+
+      {activeModal?.type === 'new' && (
+        <ModalNewLead 
+          origem={activeModal.data.origem || 'META'} 
+          nome={activeModal.data.nome || 'Lead'} 
+          createdAt={new Date(activeModal.data.created_at || Date.now())} 
+        />
+      )}
+
+      {activeModal?.type === 'attended' && (
+        <ModalAttended 
+          corretor={activeModal.data.corretor_nome || 'Corretor'} 
+          leadNome={activeModal.data.nome || 'Lead'} 
+          tempo="--:--" 
+        />
       )}
     </div>
   );

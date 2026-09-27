@@ -101,4 +101,6 @@ export interface TvDashboardData {
   plantao: { atual?: string, proximo?: string };
   fila: number; // leads sem dono
   origens?: { nome: string, count: number }[];
+  latestLeads?: any[];
+  campanhas?: { nome: string, leads: number, visitas: number, fechamentos: number }[];
 }
