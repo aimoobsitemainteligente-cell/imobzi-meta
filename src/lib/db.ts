@@ -37,6 +37,7 @@ export async function initDb() {
 
   try {
     await sql`
+      CREATE TABLE IF NOT EXISTS settings (key VARCHAR(100) PRIMARY KEY, value JSONB, updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);
       CREATE TABLE IF NOT EXISTS meta_leads (
         id SERIAL PRIMARY KEY,
         lead_id VARCHAR(100) UNIQUE,
@@ -274,5 +275,34 @@ export async function getTvLeadsFromDb(): Promise<any[]> {
   } catch (err) {
     console.error("Erro ao carregar tv_leads do Neon:", err);
     return [];
+  }
+}
+
+export async function getSetting(key: string): Promise<any> {
+  const sql = getSql();
+  if (!sql) return null;
+  try {
+    await initDb();
+    const rows = await sql`SELECT value FROM settings WHERE key = ${key}`;
+    if (rows.length > 0) return rows[0].value;
+  } catch (e) {
+    console.error("Erro ao ler setting:", e);
+  }
+  return null;
+}
+
+export async function setSetting(key: string, value: any): Promise<boolean> {
+  const sql = getSql();
+  if (!sql) return false;
+  try {
+    await initDb();
+    await sql`
+      INSERT INTO settings (key, value) VALUES (${key}, ${JSON.stringify(value)}::jsonb)
+      ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = CURRENT_TIMESTAMP
+    `;
+    return true;
+  } catch (e) {
+    console.error("Erro ao salvar setting:", e);
+    return false;
   }
 }

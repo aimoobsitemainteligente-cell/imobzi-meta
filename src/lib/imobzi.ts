@@ -2,8 +2,9 @@ import { MetaLeadData } from './meta';
 import { saveLeadToDb } from './db';
 import fs from 'fs';
 import path from 'path';
+import { getSetting, setSetting } from './db';
 
-interface FieldMappingConfig {
+export interface FieldMappingConfig {
   contactFields: {
     fullname: string;
     phone: string;
@@ -22,18 +23,23 @@ interface FieldMappingConfig {
   leadSource: string;
 }
 
-function loadMappingConfig(): FieldMappingConfig {
+export async function loadMappingConfig(): Promise<FieldMappingConfig> {
+  let config = await getSetting('field_mapping');
+  if (config) return config;
+
   const configPath = path.join(process.cwd(), 'src', 'data', 'field-mapping.json');
   try {
     if (fs.existsSync(configPath)) {
-      return JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      await setSetting('field_mapping', config);
+      return config;
     }
   } catch (err) {
     console.error('Erro ao ler field-mapping.json:', err);
   }
 
   // Configuração padrão de fallback
-  return {
+  const defaultConfig = {
     contactFields: {
       fullname: 'nome_completo',
       phone: 'phone_number',
@@ -44,6 +50,8 @@ function loadMappingConfig(): FieldMappingConfig {
     noteTitleTemplate: 'Contato de {nome} sobre o imóvel de cód. {codigo_imovel}',
     leadSource: 'Facebook Leads',
   };
+  await setSetting('field_mapping', defaultConfig);
+  return defaultConfig;
 }
 
 function getFieldValue(leadData: MetaLeadData, keyOrPattern: string): string {
@@ -195,13 +203,12 @@ function resolveContactField(
   return { value: '', matchedKey: '' };
 }
 
-function saveUpdatedConfig(config: FieldMappingConfig) {
+export async function saveUpdatedConfig(config: FieldMappingConfig) {
+  await setSetting('field_mapping', config);
   const configPath = path.join(process.cwd(), 'src', 'data', 'field-mapping.json');
   try {
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
-  } catch (err) {
-    console.error('Erro ao atualizar field-mapping.json:', err);
-  }
+  } catch (err) {}
 }
 
 export async function sendLeadToImobzi(leadData: MetaLeadData) {
@@ -212,7 +219,7 @@ export async function sendLeadToImobzi(leadData: MetaLeadData) {
     return false;
   }
 
-  const config = loadMappingConfig();
+  const config = await loadMappingConfig();
 
   // 1. Extração Inteligente com Auto-Detecção de Campos de Contato
   const nameRes = resolveContactField(
