@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { TvDashboardData, SheetEvent, Period } from '@/lib/tv/types';
 import { mockDashboardData, mockEvents } from '@/lib/tv/mock';
 import { TopBar } from './components/TopBar';
