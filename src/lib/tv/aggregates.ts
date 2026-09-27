@@ -243,7 +243,7 @@ export function calculateDashboardData(leads: any[], period: Period = 'hoje'): T
     const corretor = (lead.corretor_nome || '').trim();
     
     if (corretor && corretor.toLowerCase() !== 'sem dono') {
-      const b = raceBrokerMap.get(corretor) || { visitas: 0, leads_recebidos: 0, fechamentos: 0, responseTimesMs: [], name: corretor };
+      const b = raceBrokerMap.get(corretor) || { visitas: 0, leads_recebidos: 0, fechamentos: 0, responseTimesMs: [] as number[], name: corretor };
       b.leads_recebidos++;
       
       if (['visita agendada', 'proposta', 'ganho'].includes(status)) {
