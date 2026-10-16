@@ -8,7 +8,7 @@ export async function middleware(request: NextRequest) {
   // 1. ROTAS PÚBLICAS (NUNCA BLOQUEAR)
   // O webhook do Meta DEVE ser público para receber leads de anúncios
   if (
-    pathname === "/api/webhook" ||
+    pathname.startsWith("/api/webhook") ||
     pathname === "/login" ||
     pathname === "/api/auth/login" ||
     pathname.startsWith("/api/tv") ||
