@@ -71,6 +71,11 @@ export async function sendToGoogleSheets(leadData: any, imobziId?: string | null
     }
     imovel += `Formulário: ${nomeFormulario}\n🎯 Campanha: ${nomeCampanha}`;
 
+    // "Origem de Lead" (coluna M): por enquanto só leads de formulário passam por aqui.
+    // Usa o nome da campanha e, se não houver, o nome do formulário.
+    const origemDetalhe = leadData.campaign_name || leadData.form_name || "";
+    const origemLead = origemDetalhe ? `Formulário Meta - ${origemDetalhe}` : "Formulário Meta";
+
     // Link do Imobzi na coluna W (23ª coluna = índice 22)
     const safeId = imobziId ? imobziId.replace("person-", "") : "";
     const linkImobzi = safeId ? `https://my.imobzi.com/#/contacts/person-${safeId}` : "N/A";
@@ -82,6 +87,7 @@ export async function sendToGoogleSheets(leadData: any, imobziId?: string | null
     row[3] = leadPhone;         // D = Nº TELEFONE
     row[4] = qualVideo;         // E = QUAL VIDEO?
     row[5] = imovel;            // F = IMÓVEL
+    row[12] = origemLead;       // M = Origem de Lead
     row[22] = linkImobzi;       // W = Link Imobzi
 
     // Sanitize to prevent formula injection (=, +, -, @)

@@ -43,6 +43,40 @@ export async function getFormName(formId: string): Promise<string> {
   return `Formulário #${formId}`;
 }
 
+// Cache em memória para nomes de campanhas
+const campaignNameCache: Record<string, string> = {};
+
+/**
+ * Busca o nome da campanha pela Graph API a partir do campaign_id ou, se não houver, do ad_id.
+ * Retorna "" se não conseguir.
+ */
+export async function getCampaignName(campaignId?: string, adId?: string): Promise<string> {
+  const accessToken = process.env.META_ACCESS_TOKEN;
+  if (!accessToken || (!campaignId && !adId)) return "";
+
+  const cacheKey = campaignId ? `c:${campaignId}` : `a:${adId}`;
+  if (campaignNameCache[cacheKey]) return campaignNameCache[cacheKey];
+
+  try {
+    const url = campaignId
+      ? `https://graph.facebook.com/v22.0/${campaignId}?fields=name&access_token=${accessToken}`
+      : `https://graph.facebook.com/v22.0/${adId}?fields=campaign{name}&access_token=${accessToken}`;
+    const res = await fetch(url);
+    if (res.ok) {
+      const data = await res.json();
+      const name: string | undefined = campaignId ? data.name : data.campaign?.name;
+      if (name) {
+        campaignNameCache[cacheKey] = name;
+        return name;
+      }
+    }
+  } catch (err) {
+    console.error(`Erro ao buscar nome da campanha (${cacheKey}):`, err);
+  }
+
+  return "";
+}
+
 export async function getLeadDetails(leadgenId: string, preloadedFormId?: string): Promise<MetaLeadData | null> {
   const accessToken = process.env.META_ACCESS_TOKEN;
   
@@ -99,6 +133,12 @@ export async function getLeadDetails(leadgenId: string, preloadedFormId?: string
     if (targetFormId) {
       leadData.form_id = targetFormId;
       leadData.form_name = await getFormName(targetFormId);
+    }
+
+    // Se a consulta do lead não trouxe o nome da campanha, buscar pelo campaign_id/ad_id
+    if (!leadData.campaign_name && (leadData.campaign_id || leadData.ad_id)) {
+      const campaignName = await getCampaignName(leadData.campaign_id, leadData.ad_id);
+      if (campaignName) leadData.campaign_name = campaignName;
     }
 
     return leadData;
