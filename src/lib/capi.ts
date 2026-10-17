@@ -250,7 +250,13 @@ export async function runCapiSync(opts: CapiSyncOptions = {}) {
 
     const eventTimeMs = picked.eventTimeMs ?? now;
     if (now - eventTimeMs > MAX_EVENT_AGE_MS) {
-      if (!opts.dryRun && !testEventCode) await recordEvent(sql, lead.lead_id, picked.stage, "skipped", picked.dealId, eventTimeMs, "mais de 7 dias");
+      if (!opts.dryRun && !testEventCode) {
+        try {
+          await recordEvent(sql, lead.lead_id, picked.stage, "skipped", picked.dealId, eventTimeMs, "mais de 7 dias");
+        } catch (e: any) {
+          console.error("[CAPI SYNC] Erro ao gravar skipped:", lead.lead_id, e?.message || e);
+        }
+      }
       items.push({ ...base, action: "skipped_old" });
       continue;
     }

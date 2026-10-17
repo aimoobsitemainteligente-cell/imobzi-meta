@@ -37,7 +37,11 @@ export async function initDb() {
 
   try {
     await sql`
-      CREATE TABLE IF NOT EXISTS settings (key VARCHAR(100) PRIMARY KEY, value JSONB, updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);
+      CREATE TABLE IF NOT EXISTS settings (key VARCHAR(100) PRIMARY KEY, value JSONB, updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP)
+    `;
+
+    // Neon (HTTP) não aceita vários comandos numa query só: um CREATE por chamada
+    await sql`
       CREATE TABLE IF NOT EXISTS meta_leads (
         id SERIAL PRIMARY KEY,
         lead_id VARCHAR(100) UNIQUE,
