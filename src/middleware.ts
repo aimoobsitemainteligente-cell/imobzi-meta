@@ -12,6 +12,7 @@ export async function middleware(request: NextRequest) {
     pathname === "/login" ||
     pathname === "/api/auth/login" ||
     pathname.startsWith("/api/tv") ||
+    pathname.startsWith("/api/capi") || // protegida por CRON_SECRET na própria rota
     pathname.startsWith("/tv") ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/public") ||

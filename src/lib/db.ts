@@ -79,6 +79,21 @@ export async function initDb() {
       );
     `;
 
+    // Eventos enviados à Meta Conversions API (Central de Leads): uma etapa por lead
+    await sql`
+      CREATE TABLE IF NOT EXISTS capi_events (
+        id SERIAL PRIMARY KEY,
+        lead_id VARCHAR(100) NOT NULL,
+        stage VARCHAR(50) NOT NULL,
+        status VARCHAR(20) NOT NULL,
+        deal_id VARCHAR(100),
+        event_time TIMESTAMP WITH TIME ZONE,
+        detail TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE (lead_id, stage)
+      );
+    `;
+
     await sql`
       CREATE INDEX IF NOT EXISTS idx_meta_leads_created_at 
       ON meta_leads(created_at DESC);
